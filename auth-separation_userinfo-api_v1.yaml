@@ -1,0 +1,410 @@
+openapi: 3.1.0
+info:
+  title: User Info Service API
+  version: 1.0.0
+  description: |
+    The User Info service owns personal profile data, preferences, and
+    consent records keyed by user_id. It does not authenticate and does
+    not authorise; callers must present a valid access token issued by
+    the AuthN service, and the resource owner of any operation must be
+    confirmed via the AuthZ service before this API returns sensitive
+    fields.
+
+    All personally identifiable fields are encrypted at rest. Responses
+    omit fields the caller has not been authorised to read; absence of a
+    field is not an error.
+
+servers:
+  - url: https://userinfo.example.internal/v1
+    description: Internal cluster URL
+
+tags:
+  - name: profile
+    description: Personal profile attributes
+  - name: preferences
+    description: User preferences (locale, timezone, notification opt-ins)
+  - name: consent
+    description: Consent grants and withdrawals
+  - name: lifecycle
+    description: Account export and deletion (data subject rights)
+
+paths:
+  /users/me:
+    get:
+      tags: [profile]
+      summary: Retrieve the profile of the authenticated user
+      operationId: getOwnProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile fields the caller is allowed to see
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          description: Token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      tags: [profile]
+      summary: Update profile fields of the authenticated user
+      operationId: updateOwnProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfilePatch'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+    delete:
+      tags: [lifecycle]
+      summary: Request deletion of the authenticated user's account
+      operationId: requestAccountDeletion
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: |
+            Request accepted. The account is asynchronously scrubbed
+            across all three services; an audit-only record is retained
+            as required by regulation.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [request_id]
+                properties:
+                  request_id:
+                    type: string
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [profile]
+      summary: Retrieve another user's profile (subject to AuthZ)
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile fields the caller is allowed to see
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '403':
+          description: Caller is not permitted to view this profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No profile exists for this user_id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/me/preferences:
+    get:
+      tags: [preferences]
+      summary: Retrieve preferences for the authenticated user
+      operationId: getOwnPreferences
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+
+    put:
+      tags: [preferences]
+      summary: Replace preferences for the authenticated user
+      operationId: replaceOwnPreferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preferences'
+      responses:
+        '200':
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+
+  /users/me/consents:
+    get:
+      tags: [consent]
+      summary: List current consent grants for the authenticated user
+      operationId: listOwnConsents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Consent grants
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentGrant'
+
+    post:
+      tags: [consent]
+      summary: Record a new consent grant
+      operationId: grantConsent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentGrantRequest'
+      responses:
+        '201':
+          description: Grant recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentGrant'
+
+  /users/me/consents/{consentKey}:
+    parameters:
+      - name: consentKey
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ConsentKey'
+    delete:
+      tags: [consent]
+      summary: Withdraw a consent grant
+      operationId: withdrawConsent
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Withdrawal recorded; downstream systems notified via event
+
+  /users/me/export:
+    post:
+      tags: [lifecycle]
+      summary: Request a data export (subject access request)
+      operationId: requestDataExport
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Request accepted; export will be delivered out of band
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [request_id]
+                properties:
+                  request_id:
+                    type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UserId'
+
+  schemas:
+    UserId:
+      type: string
+      format: uuid
+
+    ConsentKey:
+      type: string
+      pattern: '^[a-z][a-z0-9_]+\.[a-z][a-z0-9_]+$'
+      description: |
+        Identifier of the consent purpose, e.g. marketing.email,
+        analytics.product, sharing.partners.
+
+    Profile:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UserId'
+        display_name:
+          type: string
+          maxLength: 100
+        given_name:
+          type: string
+          maxLength: 100
+        family_name:
+          type: string
+          maxLength: 100
+        avatar_url:
+          type: string
+          format: uri
+        pronouns:
+          type: string
+          maxLength: 50
+        bio:
+          type: string
+          maxLength: 1000
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProfilePatch:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+        given_name:
+          type: string
+          maxLength: 100
+        family_name:
+          type: string
+          maxLength: 100
+        avatar_url:
+          type: string
+          format: uri
+        pronouns:
+          type: string
+          maxLength: 50
+        bio:
+          type: string
+          maxLength: 1000
+      additionalProperties: false
+
+    Preferences:
+      type: object
+      properties:
+        locale:
+          type: string
+          pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+          description: BCP 47 language tag, e.g. en, en-GB, fr-CA.
+        timezone:
+          type: string
+          description: IANA time zone, e.g. Europe/London.
+        notifications:
+          type: object
+          properties:
+            email:
+              type: boolean
+            push:
+              type: boolean
+            sms:
+              type: boolean
+        accessibility:
+          type: object
+          properties:
+            high_contrast:
+              type: boolean
+            reduced_motion:
+              type: boolean
+            larger_text:
+              type: boolean
+
+    ConsentGrantRequest:
+      type: object
+      required: [key, version]
+      properties:
+        key:
+          $ref: '#/components/schemas/ConsentKey'
+        version:
+          type: string
+          description: Version of the consent text the user agreed to.
+        evidence:
+          type: object
+          description: Free-form evidence (e.g. screenshot reference, IP, UA).
+          additionalProperties: true
+
+    ConsentGrant:
+      type: object
+      required: [key, version, granted_at]
+      properties:
+        key:
+          $ref: '#/components/schemas/ConsentKey'
+        version:
+          type: string
+        granted_at:
+          type: string
+          format: date-time
+        withdrawn_at:
+          type: string
+          format: date-time
+        evidence:
+          type: object
+          additionalProperties: true
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            violations:
+              type: array
+              items:
+                type: object
+                required: [field, rule]
+                properties:
+                  field:
+                    type: string
+                  rule:
+                    type: string
+                  message:
+                    type: string

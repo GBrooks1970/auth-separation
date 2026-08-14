@@ -1,0 +1,620 @@
+openapi: 3.1.0
+info:
+  title: Authorisation Service API
+  version: 1.0.0
+  description: |
+    The Authorisation (AuthZ) service decides whether an authenticated user
+    is allowed to perform a given action on a given resource. It owns roles,
+    permissions, and policy bindings keyed by user_id. It does not know
+    anything about credentials, MFA, or personal profile data.
+
+    AuthZ is consulted on every protected request. It is designed for
+    sub-10ms decision latency at the service mesh edge. Decisions are
+    intentionally not cached in access tokens, so that role changes take
+    effect on the next request rather than on the next token refresh.
+
+servers:
+  - url: https://authz.example.internal/v1
+    description: Internal cluster URL
+
+tags:
+  - name: decisions
+    description: Real-time permission and policy decisions
+  - name: roles
+    description: Role definitions and assignments
+  - name: permissions
+    description: Permission catalogue
+  - name: policies
+    description: Higher-level policy bindings
+  - name: audit
+    description: Decision logs
+
+paths:
+  /decisions/check:
+    post:
+      tags: [decisions]
+      summary: Determine whether a subject may perform an action on a resource
+      operationId: checkDecision
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+      responses:
+        '200':
+          description: Decision returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+
+  /decisions/batch:
+    post:
+      tags: [decisions]
+      summary: Evaluate multiple decisions in a single request
+      operationId: checkDecisionsBatch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requests]
+              properties:
+                requests:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    $ref: '#/components/schemas/DecisionRequest'
+      responses:
+        '200':
+          description: Decisions returned in input order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [results]
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DecisionResponse'
+
+  /permissions:
+    get:
+      tags: [permissions]
+      summary: List all defined permissions
+      operationId: listPermissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageCursor'
+      responses:
+        '200':
+          description: Page of permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionPage'
+
+  /roles:
+    get:
+      tags: [roles]
+      summary: List all defined roles
+      operationId: listRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageCursor'
+      responses:
+        '200':
+          description: Page of roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePage'
+
+    post:
+      tags: [roles]
+      summary: Create a new role
+      operationId: createRole
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleDefinition'
+      responses:
+        '201':
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '409':
+          description: Role with this key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /roles/{roleKey}:
+    parameters:
+      - $ref: '#/components/parameters/RoleKey'
+    get:
+      tags: [roles]
+      summary: Retrieve a role definition
+      operationId: getRole
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags: [roles]
+      summary: Replace a role definition
+      operationId: replaceRole
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleDefinition'
+      responses:
+        '200':
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+    delete:
+      tags: [roles]
+      summary: Delete a role; existing assignments are removed
+      operationId: deleteRole
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Role deleted
+
+  /users/{userId}/roles:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [roles]
+      summary: List roles assigned to a user
+      operationId: listUserRoles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Assigned roles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user_id, roles]
+                properties:
+                  user_id:
+                    $ref: '#/components/schemas/UserId'
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoleAssignment'
+
+    post:
+      tags: [roles]
+      summary: Assign a role to a user
+      operationId: assignRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          schema:
+            type: string
+            maxLength: 255
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentRequest'
+      responses:
+        '201':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+        '409':
+          description: Already assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{userId}/roles/{roleKey}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+      - $ref: '#/components/parameters/RoleKey'
+    delete:
+      tags: [roles]
+      summary: Remove a role assignment from a user
+      operationId: revokeRole
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Assignment removed
+
+  /policies:
+    get:
+      tags: [policies]
+      summary: List policies
+      operationId: listPolicies
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageCursor'
+      responses:
+        '200':
+          description: Page of policies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyPage'
+
+    post:
+      tags: [policies]
+      summary: Create a policy
+      operationId: createPolicy
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyDefinition'
+      responses:
+        '201':
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+
+  /audit/decisions:
+    get:
+      tags: [audit]
+      summary: Retrieve decision audit log entries
+      operationId: listDecisionAuditEntries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserId'
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/PageCursor'
+      responses:
+        '200':
+          description: Page of audit entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionAuditPage'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/UserId'
+    RoleKey:
+      name: roleKey
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-z][a-z0-9_]{1,63}$'
+    PageSize:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    PageCursor:
+      name: page_cursor
+      in: query
+      schema:
+        type: string
+
+  schemas:
+    UserId:
+      type: string
+      format: uuid
+
+    PermissionKey:
+      type: string
+      pattern: '^[a-z][a-z0-9_]+\.[a-z][a-z0-9_]+$'
+      description: |
+        Dotted lower-case identifier of the form domain.action,
+        e.g. invoice.read, project.delete.
+
+    Permission:
+      type: object
+      required: [key, description]
+      properties:
+        key:
+          $ref: '#/components/schemas/PermissionKey'
+        description:
+          type: string
+
+    PermissionPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+        next_cursor:
+          type: string
+
+    RoleDefinition:
+      type: object
+      required: [key, name, permissions]
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{1,63}$'
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/PermissionKey'
+
+    Role:
+      allOf:
+        - $ref: '#/components/schemas/RoleDefinition'
+        - type: object
+          required: [created_at]
+          properties:
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    RolePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        next_cursor:
+          type: string
+
+    RoleAssignmentRequest:
+      type: object
+      required: [role_key]
+      properties:
+        role_key:
+          type: string
+        scope:
+          type: string
+          description: Optional resource scope, e.g. tenant or project ID.
+        expires_at:
+          type: string
+          format: date-time
+
+    RoleAssignment:
+      type: object
+      required: [role_key, assigned_at]
+      properties:
+        role_key:
+          type: string
+        scope:
+          type: string
+        assigned_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+
+    PolicyDefinition:
+      type: object
+      required: [key, effect, subjects, actions]
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{1,63}$'
+        description:
+          type: string
+        effect:
+          type: string
+          enum: [allow, deny]
+        subjects:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            oneOf:
+              - required: [user_id]
+                properties:
+                  user_id:
+                    $ref: '#/components/schemas/UserId'
+              - required: [role_key]
+                properties:
+                  role_key:
+                    type: string
+        actions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PermissionKey'
+        resources:
+          type: array
+          items:
+            type: string
+            description: Resource pattern, e.g. project:123, project:*
+        conditions:
+          type: object
+          additionalProperties: true
+          description: |
+            Free-form key-value conditions (time, IP range, etc.) evaluated
+            by the policy engine. Schema intentionally open; agree per
+            deployment.
+
+    Policy:
+      allOf:
+        - $ref: '#/components/schemas/PolicyDefinition'
+        - type: object
+          required: [created_at]
+          properties:
+            created_at:
+              type: string
+              format: date-time
+
+    PolicyPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+        next_cursor:
+          type: string
+
+    DecisionRequest:
+      type: object
+      required: [user_id, action]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UserId'
+        action:
+          $ref: '#/components/schemas/PermissionKey'
+        resource:
+          type: string
+          description: Specific resource being accessed, e.g. project:123.
+        context:
+          type: object
+          additionalProperties: true
+          description: Arbitrary request context for policy conditions.
+
+    DecisionResponse:
+      type: object
+      required: [allowed, decided_at]
+      properties:
+        allowed:
+          type: boolean
+        decided_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          description: |
+            Human-readable explanation of the decision. Useful for
+            debugging; never leak to end users without redaction.
+        matched_rule:
+          type: string
+          description: Identifier of the role or policy that produced the decision.
+
+    DecisionAuditEntry:
+      type: object
+      required: [id, user_id, action, allowed, decided_at]
+      properties:
+        id:
+          type: string
+        user_id:
+          $ref: '#/components/schemas/UserId'
+        action:
+          $ref: '#/components/schemas/PermissionKey'
+        resource:
+          type: string
+        allowed:
+          type: boolean
+        decided_at:
+          type: string
+          format: date-time
+        matched_rule:
+          type: string
+        request_id:
+          type: string
+
+    DecisionAuditPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionAuditEntry'
+        next_cursor:
+          type: string
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string

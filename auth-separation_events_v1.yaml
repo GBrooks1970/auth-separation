@@ -1,0 +1,502 @@
+asyncapi: 3.0.0
+info:
+  title: Auth Separation Domain Events
+  version: 1.0.0
+  description: |
+    Domain events published by the AuthN, AuthZ, and User Info services.
+    These events are the only legitimate channel for cross-service state
+    propagation. Direct synchronous calls between the three services
+    beyond the published HTTP contracts are not permitted.
+
+    All events are signed by their publisher with the publisher's private
+    key. Consumers must verify signatures before processing.
+
+defaultContentType: application/cloudevents+json
+
+servers:
+  bus:
+    host: bus.example.internal
+    protocol: kafka
+    description: Internal event bus
+
+channels:
+  user.lifecycle:
+    address: user.lifecycle
+    description: User account lifecycle events
+    messages:
+      UserRegistered:
+        $ref: '#/components/messages/UserRegistered'
+      UserDeletionRequested:
+        $ref: '#/components/messages/UserDeletionRequested'
+      UserDeleted:
+        $ref: '#/components/messages/UserDeleted'
+
+  authn.events:
+    address: authn.events
+    description: Authentication events
+    messages:
+      UserAuthenticated:
+        $ref: '#/components/messages/UserAuthenticated'
+      AuthenticationFailed:
+        $ref: '#/components/messages/AuthenticationFailed'
+      CredentialsChanged:
+        $ref: '#/components/messages/CredentialsChanged'
+      MfaEnrolled:
+        $ref: '#/components/messages/MfaEnrolled'
+      SessionRevoked:
+        $ref: '#/components/messages/SessionRevoked'
+
+  authz.events:
+    address: authz.events
+    description: Authorisation events
+    messages:
+      RoleAssigned:
+        $ref: '#/components/messages/RoleAssigned'
+      RoleRevoked:
+        $ref: '#/components/messages/RoleRevoked'
+      PolicyChanged:
+        $ref: '#/components/messages/PolicyChanged'
+
+  userinfo.events:
+    address: userinfo.events
+    description: User info and consent events
+    messages:
+      ProfileUpdated:
+        $ref: '#/components/messages/ProfileUpdated'
+      PreferencesUpdated:
+        $ref: '#/components/messages/PreferencesUpdated'
+      ConsentGranted:
+        $ref: '#/components/messages/ConsentGranted'
+      ConsentWithdrawn:
+        $ref: '#/components/messages/ConsentWithdrawn'
+
+operations:
+  publishUserRegistered:
+    action: send
+    channel:
+      $ref: '#/channels/user.lifecycle'
+    messages:
+      - $ref: '#/channels/user.lifecycle/messages/UserRegistered'
+
+  publishUserDeletionRequested:
+    action: send
+    channel:
+      $ref: '#/channels/user.lifecycle'
+    messages:
+      - $ref: '#/channels/user.lifecycle/messages/UserDeletionRequested'
+
+  publishAuthnEvent:
+    action: send
+    channel:
+      $ref: '#/channels/authn.events'
+
+  publishAuthzEvent:
+    action: send
+    channel:
+      $ref: '#/channels/authz.events'
+
+  publishUserInfoEvent:
+    action: send
+    channel:
+      $ref: '#/channels/userinfo.events'
+
+components:
+  messages:
+    UserRegistered:
+      name: UserRegistered
+      title: User registered
+      payload:
+        $ref: '#/components/schemas/UserRegisteredPayload'
+
+    UserDeletionRequested:
+      name: UserDeletionRequested
+      title: User deletion requested
+      payload:
+        $ref: '#/components/schemas/UserDeletionRequestedPayload'
+
+    UserDeleted:
+      name: UserDeleted
+      title: User deleted across all services
+      payload:
+        $ref: '#/components/schemas/UserDeletedPayload'
+
+    UserAuthenticated:
+      name: UserAuthenticated
+      title: A user successfully authenticated
+      payload:
+        $ref: '#/components/schemas/UserAuthenticatedPayload'
+
+    AuthenticationFailed:
+      name: AuthenticationFailed
+      title: An authentication attempt failed
+      payload:
+        $ref: '#/components/schemas/AuthenticationFailedPayload'
+
+    CredentialsChanged:
+      name: CredentialsChanged
+      title: A user's credentials changed
+      payload:
+        $ref: '#/components/schemas/CredentialsChangedPayload'
+
+    MfaEnrolled:
+      name: MfaEnrolled
+      title: A user enrolled an MFA factor
+      payload:
+        $ref: '#/components/schemas/MfaEnrolledPayload'
+
+    SessionRevoked:
+      name: SessionRevoked
+      title: A session was revoked
+      payload:
+        $ref: '#/components/schemas/SessionRevokedPayload'
+
+    RoleAssigned:
+      name: RoleAssigned
+      title: A role was assigned to a user
+      payload:
+        $ref: '#/components/schemas/RoleAssignedPayload'
+
+    RoleRevoked:
+      name: RoleRevoked
+      title: A role was revoked from a user
+      payload:
+        $ref: '#/components/schemas/RoleRevokedPayload'
+
+    PolicyChanged:
+      name: PolicyChanged
+      title: A policy was created, replaced, or deleted
+      payload:
+        $ref: '#/components/schemas/PolicyChangedPayload'
+
+    ProfileUpdated:
+      name: ProfileUpdated
+      title: A user's profile was updated
+      payload:
+        $ref: '#/components/schemas/ProfileUpdatedPayload'
+
+    PreferencesUpdated:
+      name: PreferencesUpdated
+      title: A user's preferences were updated
+      payload:
+        $ref: '#/components/schemas/PreferencesUpdatedPayload'
+
+    ConsentGranted:
+      name: ConsentGranted
+      title: A consent grant was recorded
+      payload:
+        $ref: '#/components/schemas/ConsentGrantedPayload'
+
+    ConsentWithdrawn:
+      name: ConsentWithdrawn
+      title: A consent grant was withdrawn
+      payload:
+        $ref: '#/components/schemas/ConsentWithdrawnPayload'
+
+  schemas:
+    EventEnvelope:
+      type: object
+      required: [id, type, source, specversion, time, subject, data]
+      properties:
+        id:
+          type: string
+          description: Unique event ID, used for deduplication.
+        type:
+          type: string
+          description: Reverse-DNS event type, e.g. com.example.authn.UserAuthenticated.
+        source:
+          type: string
+          description: Publishing service identifier.
+        specversion:
+          type: string
+          enum: ["1.0"]
+        time:
+          type: string
+          format: date-time
+        subject:
+          type: string
+          description: Subject the event refers to (typically user_id).
+        datacontenttype:
+          type: string
+          enum: [application/json]
+        data:
+          type: object
+
+    UserId:
+      type: string
+      format: uuid
+
+    UserRegisteredPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, registered_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                registered_at:
+                  type: string
+                  format: date-time
+
+    UserDeletionRequestedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, request_id, requested_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                request_id:
+                  type: string
+                requested_at:
+                  type: string
+                  format: date-time
+
+    UserDeletedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, completed_at, services]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                completed_at:
+                  type: string
+                  format: date-time
+                services:
+                  type: array
+                  items:
+                    type: string
+                    enum: [authn, authz, userinfo]
+
+    UserAuthenticatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, occurred_at, mfa]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                device_id:
+                  type: string
+                occurred_at:
+                  type: string
+                  format: date-time
+                mfa:
+                  type: boolean
+
+    AuthenticationFailedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [login_identifier_hash, occurred_at, reason]
+              properties:
+                login_identifier_hash:
+                  type: string
+                  description: SHA-256 hash of the submitted identifier; the raw value is never published.
+                occurred_at:
+                  type: string
+                  format: date-time
+                reason:
+                  type: string
+                  enum: [unknown_user, bad_password, mfa_failed, locked, expired]
+
+    CredentialsChangedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, kind, changed_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                kind:
+                  type: string
+                  enum: [password, mfa, recovery_codes]
+                changed_at:
+                  type: string
+                  format: date-time
+
+    MfaEnrolledPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, method, enrolled_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                method:
+                  type: string
+                  enum: [totp, webauthn]
+                enrolled_at:
+                  type: string
+                  format: date-time
+
+    SessionRevokedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, revoked_at, reason]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                device_id:
+                  type: string
+                revoked_at:
+                  type: string
+                  format: date-time
+                reason:
+                  type: string
+                  enum: [user_logout, password_change, admin_action, suspected_compromise, account_deletion]
+
+    RoleAssignedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, role_key, assigned_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                role_key:
+                  type: string
+                scope:
+                  type: string
+                assigned_at:
+                  type: string
+                  format: date-time
+                expires_at:
+                  type: string
+                  format: date-time
+
+    RoleRevokedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, role_key, revoked_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                role_key:
+                  type: string
+                scope:
+                  type: string
+                revoked_at:
+                  type: string
+                  format: date-time
+
+    PolicyChangedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [policy_key, change, changed_at]
+              properties:
+                policy_key:
+                  type: string
+                change:
+                  type: string
+                  enum: [created, replaced, deleted]
+                changed_at:
+                  type: string
+                  format: date-time
+
+    ProfileUpdatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, fields_changed, updated_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                fields_changed:
+                  type: array
+                  items:
+                    type: string
+                  description: Names of the fields that changed. Values are not published.
+                updated_at:
+                  type: string
+                  format: date-time
+
+    PreferencesUpdatedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, updated_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                updated_at:
+                  type: string
+                  format: date-time
+
+    ConsentGrantedPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, key, version, granted_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                key:
+                  type: string
+                version:
+                  type: string
+                granted_at:
+                  type: string
+                  format: date-time
+
+    ConsentWithdrawnPayload:
+      allOf:
+        - $ref: '#/components/schemas/EventEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              required: [user_id, key, withdrawn_at]
+              properties:
+                user_id:
+                  $ref: '#/components/schemas/UserId'
+                key:
+                  type: string
+                withdrawn_at:
+                  type: string
+                  format: date-time

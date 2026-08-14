@@ -1,0 +1,578 @@
+openapi: 3.1.0
+info:
+  title: Authentication Service API
+  version: 1.0.0
+  description: |
+    The Authentication (AuthN) service proves identity and issues tokens.
+    It owns credentials, MFA secrets, and refresh tokens. It does not own
+    roles, permissions, or personal profile data. Those live in the AuthZ
+    and User Info services respectively.
+
+    All tokens issued by this service are signed JWTs verifiable against
+    the JWKS endpoint exposed at /.well-known/jwks.json. Access tokens
+    contain no role or permission information; downstream services must
+    call the AuthZ service to obtain authorisation decisions.
+  contact:
+    name: Platform Team
+  license:
+    name: Internal use only
+
+servers:
+  - url: https://authn.example.internal/v1
+    description: Internal cluster URL
+
+tags:
+  - name: registration
+    description: Account creation
+  - name: session
+    description: Login, logout, token lifecycle
+  - name: mfa
+    description: Multi-factor enrolment and challenge
+  - name: credentials
+    description: Password and recovery management
+  - name: keys
+    description: Public key discovery for token verification
+
+paths:
+  /.well-known/jwks.json:
+    get:
+      tags: [keys]
+      summary: Retrieve the JSON Web Key Set used to verify access tokens
+      operationId: getJwks
+      security: []
+      responses:
+        '200':
+          description: Current set of public verification keys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+
+  /users:
+    post:
+      tags: [registration]
+      summary: Register a new user account
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+        '409':
+          description: Login identifier already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Request failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /sessions:
+    post:
+      tags: [session]
+      summary: Authenticate and receive an access and refresh token pair
+      operationId: createSession
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication succeeded; tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Credentials rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: MFA required; complete the challenge and resubmit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaChallenge'
+
+    delete:
+      tags: [session]
+      summary: Revoke the current session and its refresh token
+      operationId: deleteSession
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Session revoked
+        '401':
+          description: Token missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/refresh:
+    post:
+      tags: [session]
+      summary: Exchange a refresh token for a new access and refresh token pair
+      operationId: refreshSession
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: New token pair issued; old refresh token invalidated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Refresh token invalid, expired, or already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /sessions/introspect:
+    post:
+      tags: [session]
+      summary: Validate an access token and return its claims
+      description: |
+        Intended for resource servers that prefer remote validation over
+        local JWKS verification. Cache responses for no longer than 30
+        seconds.
+      operationId: introspectToken
+      security:
+        - serviceAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntrospectionRequest'
+      responses:
+        '200':
+          description: Introspection result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntrospectionResponse'
+
+  /mfa/enrol:
+    post:
+      tags: [mfa]
+      summary: Begin MFA enrolment for the authenticated user
+      operationId: beginMfaEnrolment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaEnrolmentRequest'
+      responses:
+        '200':
+          description: Enrolment payload (e.g. TOTP secret to display as QR)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MfaEnrolmentResponse'
+
+  /mfa/verify:
+    post:
+      tags: [mfa]
+      summary: Confirm MFA enrolment by submitting a current code
+      operationId: verifyMfaEnrolment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaVerifyRequest'
+      responses:
+        '204':
+          description: MFA confirmed and active
+        '401':
+          description: Code rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /mfa/challenge:
+    post:
+      tags: [mfa]
+      summary: Submit an MFA code in response to a 403 MfaChallenge
+      operationId: submitMfaChallenge
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MfaChallengeSubmission'
+      responses:
+        '200':
+          description: Challenge satisfied; tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Code rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /credentials/password:
+    put:
+      tags: [credentials]
+      summary: Change the password of the authenticated user
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        '204':
+          description: Password updated; all other sessions revoked
+        '401':
+          description: Current password incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: New password fails policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /credentials/password/reset:
+    post:
+      tags: [credentials]
+      summary: Initiate a password reset for a login identifier
+      operationId: initiatePasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetInitiationRequest'
+      responses:
+        '202':
+          description: |
+            Reset request accepted. The response is identical regardless of
+            whether the identifier exists, to prevent enumeration.
+
+  /credentials/password/reset/confirm:
+    post:
+      tags: [credentials]
+      summary: Complete a password reset using the token sent out-of-band
+      operationId: confirmPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmationRequest'
+      responses:
+        '204':
+          description: Password updated; all sessions revoked
+        '401':
+          description: Reset token invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    serviceAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Service-to-service token issued by an internal trust authority,
+        not by this AuthN service. Used only by resource servers calling
+        /sessions/introspect.
+
+  schemas:
+    UserId:
+      type: string
+      format: uuid
+      description: Stable, opaque identifier for a user. Lifetime-stable.
+
+    LoginIdentifier:
+      type: string
+      minLength: 3
+      maxLength: 254
+      description: Email address or username used to look up credentials.
+
+    Password:
+      type: string
+      minLength: 12
+      maxLength: 256
+      writeOnly: true
+      description: Plain-text password. Never persisted; hashed on receipt.
+
+    RegistrationRequest:
+      type: object
+      required: [login_identifier, password]
+      properties:
+        login_identifier:
+          $ref: '#/components/schemas/LoginIdentifier'
+        password:
+          $ref: '#/components/schemas/Password'
+
+    RegistrationResponse:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/UserId'
+
+    LoginRequest:
+      type: object
+      required: [login_identifier, password]
+      properties:
+        login_identifier:
+          $ref: '#/components/schemas/LoginIdentifier'
+        password:
+          $ref: '#/components/schemas/Password'
+        device_id:
+          type: string
+          maxLength: 128
+          description: Stable client-generated device identifier for refresh-token binding.
+
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: Signed JWT.
+        refresh_token:
+          type: string
+          description: Opaque, single-use, rotated on every refresh.
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          minimum: 1
+          description: Access token lifetime in seconds.
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    IntrospectionRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    IntrospectionResponse:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
+        sub:
+          $ref: '#/components/schemas/UserId'
+        exp:
+          type: integer
+        iat:
+          type: integer
+        iss:
+          type: string
+        aud:
+          type: string
+        mfa:
+          type: boolean
+
+    MfaChallenge:
+      type: object
+      required: [challenge_id, methods]
+      properties:
+        challenge_id:
+          type: string
+        methods:
+          type: array
+          items:
+            type: string
+            enum: [totp, webauthn, sms]
+
+    MfaChallengeSubmission:
+      type: object
+      required: [challenge_id, method, code]
+      properties:
+        challenge_id:
+          type: string
+        method:
+          type: string
+          enum: [totp, webauthn, sms]
+        code:
+          type: string
+
+    MfaEnrolmentRequest:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [totp, webauthn]
+
+    MfaEnrolmentResponse:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+        secret:
+          type: string
+          description: TOTP shared secret. Returned only for method=totp.
+        otpauth_url:
+          type: string
+          format: uri
+          description: TOTP provisioning URL for QR display.
+        webauthn_options:
+          type: object
+          description: WebAuthn PublicKeyCredentialCreationOptions, JSON-serialised.
+
+    MfaVerifyRequest:
+      type: object
+      required: [method, code]
+      properties:
+        method:
+          type: string
+          enum: [totp, webauthn]
+        code:
+          type: string
+
+    PasswordChangeRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          $ref: '#/components/schemas/Password'
+        new_password:
+          $ref: '#/components/schemas/Password'
+
+    PasswordResetInitiationRequest:
+      type: object
+      required: [login_identifier]
+      properties:
+        login_identifier:
+          $ref: '#/components/schemas/LoginIdentifier'
+
+    PasswordResetConfirmationRequest:
+      type: object
+      required: [reset_token, new_password]
+      properties:
+        reset_token:
+          type: string
+        new_password:
+          $ref: '#/components/schemas/Password'
+
+    Jwks:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+            required: [kty, kid, alg, use]
+            properties:
+              kty:
+                type: string
+              kid:
+                type: string
+              alg:
+                type: string
+                enum: [RS256, RS384, RS512, ES256, ES384, ES512]
+              use:
+                type: string
+                enum: [sig]
+              n:
+                type: string
+              e:
+                type: string
+              x:
+                type: string
+              y:
+                type: string
+              crv:
+                type: string
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code, e.g. credentials_invalid.
+        message:
+          type: string
+          description: Human-readable summary. Not safe to display to end users without translation.
+        request_id:
+          type: string
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            violations:
+              type: array
+              items:
+                type: object
+                required: [field, rule]
+                properties:
+                  field:
+                    type: string
+                  rule:
+                    type: string
+                  message:
+                    type: string
