@@ -34,7 +34,7 @@ Each service has its own data store, its own deployment, and its own operational
 | `auth-separation_soc2-compliance_v1.md` | Markdown | SOC 2 compliance scope for AuthZ (access decisions and policy management). |
 | `auth-separation_deployment-topology_v1.md` | Markdown | Design doc on running each service in its own Docker instance per host, with positives, negatives, and alternatives. |
 | `auth-separation_database-spec_v1.md` | Markdown | Technology-agnostic database specification: per-service data model, indexes, access patterns, encryption, retention, backup, and required capabilities. |
-| `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser. |
+| `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser, with no network — its libraries are vendored in `vendor/`. |
 
 The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin file is the executable acceptance layer. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
 

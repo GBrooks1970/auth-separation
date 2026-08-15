@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 2 — AS-01 and AS-03 resolved; AS-05 raised by the new gate on its first run
+**Version:** 3 — AS-01, AS-02 and AS-03 resolved; AS-05 raised by the new gate on its first run
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -67,45 +67,6 @@ risk profile is entirely forward-looking and expressed as the `AUTH-nnn` program
 ---
 
 ### MEDIUM Priority (Score: 10–19)
-
-#### Risk #AS-02: Kanban board depends on three CDN scripts, contradicting its "self-contained" claim — Score: 12
-
-**Priority Score:** Security Impact (3) + Breakage Probability (7) + Maintenance Burden (2) = **12 points**
-**Impact:** The implementation Kanban — the plan of record for all 51 tickets — renders a blank page with no
-network, yet the README advertises it as self-contained.
-**Effort:** 1–2 hours
-**Status:** READY TO START
-**Affected Stacks:** documentation / `auth-separation_implementation-kanban_v1.html`
-
-**Problem:**
-`auth-separation_implementation-kanban_v1.html` lines 7–9 load React 18.2.0, ReactDOM 18.2.0 and
-babel-standalone 7.23.9 from `cdnjs.cloudflare.com`, with no `integrity` attribute. The README file index
-(line 37) describes the file as "Self-contained: open in any browser." Both cannot be true. Offline, on a
-restricted corporate network, or if cdnjs changes those paths, the board shows nothing — and the ticket
-payload is only reachable by reading the raw HTML. The handover v1 claim of "zero outward dependencies"
-was assessed on cross-*folder* file references and did not catch these.
-
-**Impact Analysis:**
-- **Security (3/10):** Three remote scripts execute with no Subresource Integrity pin. The content is a
-  static local document with no secrets, which caps the blast radius, but an unpinned CDN script is still
-  an uncontrolled execution path.
-- **Breakage (7/10):** Deterministic total failure offline. The portfolio has already solved this exact
-  problem once, by vendoring, in `markdown-renderer` (decision DR-MR-02).
-- **Maintenance (2/10):** Low; vendored files are pinned and static.
-
-**Refactor Strategy:**
-1. Vendor the three libraries into `vendor/` beside the HTML, pinned at the versions already referenced.
-2. Repoint the three `<script src>` tags at the local copies.
-3. Alternatively, pre-compile the JSX and drop babel-standalone entirely — it is a ~1 MB dev-only
-   transformer being shipped to render a static board.
-4. Verify by loading the file with the network disabled.
-
-**Success Criteria:**
-- [ ] The board renders all 51 tickets with no network access.
-- [ ] No `http(s)://` script or style source remains in the HTML.
-- [ ] The README's "self-contained" claim in the file index is true as written, or amended.
-
----
 
 #### Risk #AS-05: The acceptance feature bundles seven Features and cannot be run — Score: 11
 
@@ -196,6 +157,26 @@ disclosure risk before publishing: no secrets, keys, or real hostnames — every
 `*.example.internal`.
 **See:** commit `563dd6a`.
 
+#### Risk #AS-02: Kanban board depends on three CDN scripts (Score: 12) ✅ Resolved 2026-08-15
+
+**Resolution:** Vendored React 18.2.0, ReactDOM 18.2.0 and `@babel/standalone` 7.23.9 into `vendor/` at
+exactly the versions the board already referenced, obtained via `npm pack` from the npm registry rather
+than a CDN mirror, and repointed the three `<script src>` tags at the local copies. Provenance and the
+"do not repoint at a CDN" rule are recorded in `vendor/README.md`. The README file index now states the
+offline guarantee explicitly instead of merely claiming self-containment.
+
+**Verified** in headless Chromium with every non-`file://` request aborted at the network layer:
+
+| | External requests | Page errors | Ticket cards rendered |
+|---|---|---|---|
+| Before | 3 (cdnjs) | 3 | **0** |
+| After | **0** | **0** | **51** |
+
+Babel is 2.8 MB of the 2.9 MB vendored — larger than the "~1 MB" this item originally estimated. The cost
+was accepted rather than pre-compiling the JSX: pre-compiling would add a build step to a file whose value
+is that it opens from disk and works, and would replace readable inline JSX with compiled output. That
+option remains available if repository weight ever matters; the reasoning is recorded in `vendor/README.md`.
+
 #### Risk #AS-03: No gate command, so the project cannot be orchestrated (Score: 10) ✅ Resolved 2026-08-15
 
 **Resolution:** Added `npm run verify`, validating all five machine-readable artefacts — the three
@@ -217,10 +198,10 @@ The remaining `AS-03` success criterion, naming the gate in the registry row, be
 | Priority | Count | Total Effort | Status Distribution |
 |---|---|---|---|
 | HIGH (20–30) | 0 | — | — |
-| MEDIUM (10–19) | 2 | 3–5 hrs | 1 READY TO START, 1 awaiting decision |
-| LOW (0–9) | 1 | 1 hr | 1 READY TO START |
-| **Total Outstanding (`AS-nn`)** | **3** | **4–6 hrs** | `AS-02`, `AS-04`, `AS-05` |
-| Resolved | 2 | 3–5 hrs completed | `AS-01`, `AS-03` |
+| MEDIUM (10–19) | 1 | 2–3 hrs | 1 awaiting decision (`AS-05`) |
+| LOW (0–9) | 1 | 1 hr | 1 READY TO START (`AS-04`) |
+| **Total Outstanding (`AS-nn`)** | **2** | **3–4 hrs** | `AS-04`, `AS-05` |
+| Resolved | 3 | 4–7 hrs completed | `AS-01`, `AS-02`, `AS-03` |
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
@@ -362,10 +343,6 @@ filenames, with `info.version` bumped for backwards-compatible additions.
    spec-lint step already exist, so what remains is the `services/` layout, branch protection and
    code-owners.
 
-### MEDIUM Priority
-
-1. **`AS-02` vendor the Kanban's CDN dependencies** — 1–2 hrs, restores the self-contained claim.
-
 ### LOW Priority
 
 1. **`AS-04` registry row and worklist** — 1 hr, now unblocked: the GitHub URL and the `npm run verify`
@@ -377,7 +354,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
-| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-03`~~, `AS-02`, `AS-04`, `AS-05` | 4–6 hrs remaining | 2026-08-14 | in progress |
+| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, `AS-04`, `AS-05` | 3–4 hrs remaining | 2026-08-14 | in progress |
 | Sprint 2 — Phase 0 foundations | HIGH | `AUTH-001`..`AUTH-006` | not estimated | TBD | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 
