@@ -1,0 +1,9 @@
+# Node tooling (dev-only: the spec validation gate)
+node_modules/
+npm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~

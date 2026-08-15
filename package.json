@@ -1,0 +1,23 @@
+{
+  "name": "auth-separation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Specification Driven Development example: separated AuthN, AuthZ and User Info services. This package exists only to validate the specifications; there is no shipped code.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint:openapi": "redocly lint auth-separation_authn-api_v1.yaml auth-separation_authz-api_v1.yaml auth-separation_userinfo-api_v1.yaml",
+    "lint:asyncapi": "node scripts/validate-asyncapi.mjs",
+    "lint:gherkin": "node scripts/validate-gherkin.mjs",
+    "verify": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:gherkin"
+  },
+  "devDependencies": {
+    "@asyncapi/parser": "^3.6.3",
+    "@cucumber/gherkin": "^33.1.0",
+    "@cucumber/messages": "^28.1.0",
+    "@redocly/cli": "^2.46.1"
+  }
+}
