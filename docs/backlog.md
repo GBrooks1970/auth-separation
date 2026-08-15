@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 3 — AS-01, AS-02 and AS-03 resolved; AS-05 raised by the new gate on its first run
+**Version:** 4 — AS-05 resolved (acceptance file split into seven); AS-06 raised by the split
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -68,47 +68,7 @@ risk profile is entirely forward-looking and expressed as the `AUTH-nnn` program
 
 ### MEDIUM Priority (Score: 10–19)
 
-#### Risk #AS-05: The acceptance feature bundles seven Features and cannot be run — Score: 11
-
-**Priority Score:** Security Impact (0) + Breakage Probability (8) + Maintenance Burden (3) = **11 points**
-**Impact:** The Gherkin file is the executable acceptance layer and item 3 of the production-readiness
-checklist, but no Cucumber-family runner can execute it in its current shape.
-**Effort:** 2–3 hours
-**Status:** READY TO START — **decision required**
-**Affected Stacks:** `auth-separation_acceptance_v1.feature`
-
-**Problem:**
-`auth-separation_acceptance_v1.feature` contains **seven `Feature:` blocks** (at lines 8, 48, 73, 101, 122,
-147 and 174) totalling 21 scenarios. The Gherkin grammar permits exactly one Feature per file. Cucumber,
-SpecFlow, Behave and every other runner in the family reject the file outright — the parser stops at the
-second `Feature:` keyword. Found by `npm run lint:gherkin` on its first run against the real parser;
-reading the file does not reveal it, because each block is individually well-formed.
-
-`AUTH-070` ("Implement Gherkin acceptance suite") would hit this on day one.
-
-**Impact Analysis:**
-- **Security (0/10):** No runtime surface.
-- **Breakage (8/10):** Total, deterministic, and load-bearing — the acceptance suite is the definition of
-  done for the whole example. It is not a latent risk; the file simply does not parse.
-- **Maintenance (3/10):** Splitting is mechanical; the ongoing cost is only that seven files replace one,
-  which is the normal Cucumber layout anyway.
-
-**Refactor Strategy — the decision:**
-1. **Split (recommended).** One file per Feature, e.g. `features/registration-and-first-login.feature`.
-   This is the conventional layout and makes the set runnable. It changes the README file index (which
-   lists one acceptance artefact) and diverges structurally from the canonical source example.
-2. **Keep one file, accept it is documentation.** Amend the README to state the file is a specification of
-   acceptance criteria rather than a runnable suite, and let `AUTH-070` do the split when it stands the
-   suite up.
-
-Interim state: `scripts/validate-gherkin.mjs` splits on `Feature:` boundaries and parses each block, so
-syntax is genuinely checked. Its `ACCEPT_BUNDLED_FEATURES` constant is `true`; setting it to `false` makes
-the gate demand one Feature per file, and is the last step of option 1.
-
-**Success Criteria:**
-- [ ] Decision recorded (split, or documented as non-runnable).
-- [ ] If split: 21 scenarios preserved across the new files, README file index updated,
-      `ACCEPT_BUNDLED_FEATURES` set to `false`, gate green.
+None outstanding.
 
 ---
 
@@ -141,6 +101,43 @@ which is what produced this file.
 **Success Criteria:**
 - [ ] Registry row and `registry.yml` entry merged.
 - [ ] `portfolio-status` reports the project without a drift warning.
+#### Risk #AS-06: Only one of the seven feature files declares the service-running Background — Score: 5
+
+**Priority Score:** Security Impact (0) + Breakage Probability (3) + Maintenance Burden (2) = **5 points**
+**Impact:** Six of the seven acceptance features assume a running stack without saying so, which the runner
+must supply from somewhere.
+**Effort:** 1 hour
+**Status:** READY TO START — **decision required**, owned by whoever implements `AUTH-070`
+**Affected Stacks:** `features/`
+
+**Problem:**
+The `Background` — "the AuthN service is running", and the same for AuthZ, User Info and the event bus —
+was written under the first `Feature:` block only. The `AS-05` split preserved that placement exactly
+rather than inventing content, so it now lives in
+`features/auth-separation_acceptance-registration-and-first-login_v1.feature` alone. The other six features
+depend on the same stack but do not state it. In the pre-split bundled file the question never arose,
+because the file could not run at all.
+
+**Impact Analysis:**
+- **Security (0/10):** No runtime surface.
+- **Breakage (3/10):** Not a parse failure — the suite runs either way. The risk is a scenario that assumes
+  a service is up and fails confusingly when it is not.
+- **Maintenance (2/10):** Either answer is cheap; repeating a `Background` in seven files is the more
+  duplicative of the two.
+
+**Refactor Strategy — the decision:**
+1. **Handle it once in the runner's hooks** (recommended): a `BeforeAll`-style hook asserts the stack is up.
+   No duplication, and it is where environment readiness usually belongs.
+2. **Repeat the `Background` in each file**: self-describing per file, at the cost of the same four steps
+   written seven times.
+
+This is a spec-content decision, deliberately not taken by the mechanical split.
+
+**Success Criteria:**
+- [ ] Decision recorded and applied consistently across `features/`.
+- [ ] Gate stays green and the scenario count stays at 21.
+
+---
 
 ---
 
@@ -177,6 +174,26 @@ was accepted rather than pre-compiling the JSX: pre-compiling would add a build 
 is that it opens from disk and works, and would replace readable inline JSX with compiled output. That
 option remains available if repository weight ever matters; the reasoning is recorded in `vendor/README.md`.
 
+#### Risk #AS-05: The acceptance feature bundles seven Features and cannot be run (Score: 11) ✅ Resolved 2026-08-15
+
+**Resolution:** Split into seven files under `features/`, one Feature each, keeping the spec set's
+filename versioning convention (`auth-separation_acceptance-<slug>_v1.feature`). A pure restructuring:
+**all 21 scenarios preserved verbatim**, confirmed by rebuilding the original body from the seven parts
+and comparing byte for byte. `features/README.md` carries the original header comment unchanged plus an
+index. The old bundled file is removed; git history retains it.
+
+`scripts/validate-gherkin.mjs` was rewritten to scan `features/`, enforce exactly one `Feature:` per file,
+and assert the total scenario count — both guards negative-tested (re-bundling two features fails;
+deleting one scenario fails on the count). The `ACCEPT_BUNDLED_FEATURES` allowance is gone, since the
+condition it tolerated no longer exists.
+
+Stale references repointed at `features/`: `auth-separation_architecture_v1.md` line 201, the README file
+index and prose, and five ticket bodies in the Kanban payload (`AUTH-030`, `AUTH-042`, `AUTH-070` ×2,
+`AUTH-072`). The board was re-rendered afterwards to confirm all 51 cards still load.
+
+Left open as `AS-06`: the `Background` sits in one file only, which the split deliberately did not change.
+**See:** PR #3.
+
 #### Risk #AS-03: No gate command, so the project cannot be orchestrated (Score: 10) ✅ Resolved 2026-08-15
 
 **Resolution:** Added `npm run verify`, validating all five machine-readable artefacts — the three
@@ -198,10 +215,10 @@ The remaining `AS-03` success criterion, naming the gate in the registry row, be
 | Priority | Count | Total Effort | Status Distribution |
 |---|---|---|---|
 | HIGH (20–30) | 0 | — | — |
-| MEDIUM (10–19) | 1 | 2–3 hrs | 1 awaiting decision (`AS-05`) |
-| LOW (0–9) | 1 | 1 hr | 1 READY TO START (`AS-04`) |
-| **Total Outstanding (`AS-nn`)** | **2** | **3–4 hrs** | `AS-04`, `AS-05` |
-| Resolved | 3 | 4–7 hrs completed | `AS-01`, `AS-02`, `AS-03` |
+| MEDIUM (10–19) | 0 | — | — |
+| LOW (0–9) | 2 | 2 hrs | 1 READY TO START (`AS-04`), 1 awaiting decision (`AS-06`) |
+| **Total Outstanding (`AS-nn`)** | **2** | **2 hrs** | `AS-04`, `AS-06` |
+| Resolved | 4 | 6–10 hrs completed | `AS-01`, `AS-02`, `AS-03`, `AS-05` |
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
@@ -336,9 +353,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 ### HIGH Priority
 
-1. **`AS-05` decide the acceptance-file split** — 2–3 hrs, needs an owner decision. Everything downstream
-   of `AUTH-070` rests on a runnable suite.
-2. **`AUTH-001` monorepo and CI/CD scaffolding** — the only Ready ticket on the board and the root of the
+1. **`AUTH-001` monorepo and CI/CD scaffolding** — the only Ready ticket on the board and the root of the
    dependency graph. It shrank once `AS-01` and `AS-03` landed: the repository, licence, CI workflow and
    spec-lint step already exist, so what remains is the `services/` layout, branch protection and
    code-owners.
@@ -347,6 +362,8 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 1. **`AS-04` registry row and worklist** — 1 hr, now unblocked: the GitHub URL and the `npm run verify`
    gate both exist.
+2. **`AS-06` decide where the service-running `Background` belongs** — 1 hr; naturally folds into
+   `AUTH-070`.
 
 ---
 
@@ -354,7 +371,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
-| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, `AS-04`, `AS-05` | 3–4 hrs remaining | 2026-08-14 | in progress |
+| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, ~~`AS-05`~~, `AS-04`, `AS-06` | 2 hrs remaining | 2026-08-14 | in progress |
 | Sprint 2 — Phase 0 foundations | HIGH | `AUTH-001`..`AUTH-006` | not estimated | TBD | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 

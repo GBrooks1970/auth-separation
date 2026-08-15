@@ -198,4 +198,4 @@ A skeleton built from this spec set is conformant when:
 - User Info encrypts all PII columns at rest and exposes the consent endpoints.
 - All cross-service state changes are published as events on the bus and not as direct synchronous calls.
 - Every endpoint in every OpenAPI file responds with a payload that validates against the declared schema.
-- Every Gherkin scenario in `auth-separation_acceptance_v1.feature` passes end-to-end.
+- Every Gherkin scenario in `features/` passes end-to-end.

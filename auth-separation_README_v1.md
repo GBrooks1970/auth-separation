@@ -28,7 +28,7 @@ Each service has its own data store, its own deployment, and its own operational
 | `auth-separation_authz-api_v1.yaml` | OpenAPI 3.1 | AuthZ service contract: permission checks, role assignment, policy evaluation. |
 | `auth-separation_userinfo-api_v1.yaml` | OpenAPI 3.1 | User Info service contract: profile CRUD, preferences, consent. |
 | `auth-separation_events_v1.yaml` | AsyncAPI 3.0 | Cross-service events published on a message bus. |
-| `auth-separation_acceptance_v1.feature` | Gherkin | End-to-end behavioural acceptance criteria. |
+| `features/*.feature` | Gherkin | End-to-end behavioural acceptance criteria: seven feature files, 21 scenarios. See `features/README.md`. |
 | `auth-separation_pci-compliance_v1.md` | Markdown | PCI DSS-style compliance scope for AuthN (credential handling). |
 | `auth-separation_gdpr-compliance_v1.md` | Markdown | GDPR compliance scope for User Info (personal data and data subject rights). |
 | `auth-separation_soc2-compliance_v1.md` | Markdown | SOC 2 compliance scope for AuthZ (access decisions and policy management). |
@@ -36,7 +36,7 @@ Each service has its own data store, its own deployment, and its own operational
 | `auth-separation_database-spec_v1.md` | Markdown | Technology-agnostic database specification: per-service data model, indexes, access patterns, encryption, retention, backup, and required capabilities. |
 | `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser, with no network — its libraries are vendored in `vendor/`. |
 
-The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin file is the executable acceptance layer. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
+The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin files are the executable acceptance layer. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
 
 ---
 
@@ -118,10 +118,8 @@ project's reviewed deliverable and are not reshaped to satisfy a linter's house 
 runs in CI on every push and pull request. The tooling is dev-only — nothing here ships, and no
 implementation language has been chosen.
 
-**Known issue:** `auth-separation_acceptance_v1.feature` bundles seven `Feature:` blocks into one file.
-Gherkin permits one Feature per file, so no Cucumber-family runner can execute it until it is split. The
-validator parses each block independently and reports this explicitly rather than passing it silently;
-see `AS-05` in the backlog.
+The Gherkin leg enforces one Feature per file across `features/` and asserts the total scenario count, so
+neither a re-bundled file nor a scenario quietly dropped in a refactor can pass.
 
 ---
 
