@@ -11,7 +11,13 @@ answer differs from the obvious one and the reasoning needs to survive.
 |---|---|---|---|
 | [0001](0001-branch-protection-without-required-approvals.md) | Branch protection without required approvals | Accepted | 2026-08-15 |
 | [0002](0002-committed-secret-guard.md) | A committed-secret guard in the verify gate | Accepted | 2026-08-15 |
+| [0003](0003-spec-linting-toolchain-substitution.md) | Closing AUTH-006 on a substituted linting toolchain | Accepted | 2026-08-15 |
 
-Both were written to close `AUTH-001`: the first records why the review half of its branch-protection
-criterion is deferred rather than bypassed, the second why its secrets criterion is met with an
-enforced gate rather than by having nothing to protect.
+The first two were written to close `AUTH-001`: why the review half of its branch-protection criterion
+is deferred rather than bypassed, and why its secrets criterion is met with an enforced gate rather
+than by having nothing to protect. The third closes `AUTH-006`, recording which of its named tools
+were substituted and which single criterion was **declined** — a house-style ruleset that would have
+made a linter's opinion a merge blocker over hand-reviewed specification prose.
+
+A theme runs through all three: each exists because the honest answer differed from the one that would
+have let a box be ticked.

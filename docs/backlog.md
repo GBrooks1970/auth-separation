@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
+**Version:** 9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -194,8 +194,8 @@ description rules) are reported and tolerated, so the linter does not reshape th
 
 Substantially discharges `AUTH-006` ("Wire spec linting and validation into CI"). The remaining `AS-03`
 success criterion, naming the gate in the registry row, belongs to `AS-04`.
-**See:** PR #1. A fourth leg (`lint:secrets`) was added under `AUTH-001`; `AUTH-006` is now Ready and
-awaiting only the owner's decision to close it — see the Potential Next Steps section.
+**See:** PR #1. A fourth leg (`lint:secrets`) was added under `AUTH-001`, and `AUTH-006` was closed on this
+toolchain on 2026-08-15 — see its closure record and `ADR-0003`.
 
 ---
 
@@ -213,10 +213,10 @@ Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
 | Priority | Count | Done | Ready | Blocked |
 |---|---|---:|---:|---:|
-| P0 (HIGH) | 36 | 1 (`AUTH-001`) | 1 (`AUTH-002`) | 34 |
-| P1 (MEDIUM) | 13 | 0 | 2 (`AUTH-005`, `AUTH-006`) | 11 |
+| P0 (HIGH) | 36 | 1 (`AUTH-001`) | 4 (`AUTH-002`, `AUTH-020`, `AUTH-021`, `AUTH-022`) | 31 |
+| P1 (MEDIUM) | 13 | 1 (`AUTH-006`) | 1 (`AUTH-005`) | 11 |
 | P2 (LOW) | 2 | 0 | 0 | 2 |
-| **Total** | **51** | **1** | **3** | **47** |
+| **Total** | **51** | **2** | **5** | **44** |
 
 Note that `AUTH-001` is recorded in the Kanban as blocking four tickets, but only **three** became Ready
 when it closed: `AUTH-003` carries a second blocker (`AUTH-002`) and stays in Backlog. Readiness is a
@@ -254,7 +254,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 | `AUTH-003` | Establish service mesh PKI for mTLS | Infrastructure | P0 | HIGH | `AUTH-001`, `AUTH-002` | Backlog (still blocked by `AUTH-002`) |
 | `AUTH-004` | Stand up message bus | Infrastructure | P0 | HIGH | `AUTH-003` | Backlog |
 | `AUTH-005` | Set up observability stack | Infrastructure | P1 | MEDIUM | `AUTH-001` | **Ready** |
-| `AUTH-006` | Wire spec linting and validation into CI | Foundation | P1 | MEDIUM | `AUTH-001` | **Ready** — substantially discharged, see below |
+| `AUTH-006` | Wire spec linting and validation into CI | Foundation | P1 | MEDIUM | `AUTH-001` | ✅ **Done** 2026-08-15 (`ADR-0003`) |
 
 ### Phase 1 — Databases (7 tickets)
 
@@ -272,10 +272,10 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-020` | Generate AuthN server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | Backlog — **also carries `AUTH-001` criterion 2** (see below) |
-| `AUTH-021` | Generate AuthZ server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | Backlog |
-| `AUTH-022` | Generate User Info server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | Backlog |
-| `AUTH-023` | Generate event publishers and consumers from AsyncAPI | Feature | P0 | HIGH | `AUTH-004`, `AUTH-006` | Backlog |
+| `AUTH-020` | Generate AuthN server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** — **also carries `AUTH-001` criterion 2** (see below) |
+| `AUTH-021` | Generate AuthZ server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** |
+| `AUTH-022` | Generate User Info server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** |
+| `AUTH-023` | Generate event publishers and consumers from AsyncAPI | Feature | P0 | HIGH | `AUTH-004`, `AUTH-006` | Backlog (still blocked by `AUTH-004`) |
 
 > **Inherited from `AUTH-001` (owner decision, 2026-08-15):** `AUTH-020` also carries `AUTH-001`'s second
 > acceptance criterion — *"CI runs on every PR: lint, **test**, build artefact"*. Only the lint third was
@@ -370,8 +370,30 @@ the verify gate). Both exist because the honest answer differed from the obvious
 four planted secret fixtures produced four correctly-located findings and failed `verify`; a direct push to
 `main` was rejected with `GH013`.
 
-**Unblocked:** `AUTH-002`, `AUTH-005`, `AUTH-006` are now Ready. `AUTH-003` is not — see the note under the
+**Unblocked:** `AUTH-002`, `AUTH-005`, `AUTH-006` became Ready. `AUTH-003` did not — see the note under the
 risk summary.
+
+---
+
+## `AUTH-006` closure record — Done 2026-08-15
+
+Closed on the toolchain that already existed rather than on the specific tools its April 2026 criteria
+named. The reasoning, and one refusal, are in
+[`ADR-0003`](adr/0003-spec-linting-toolchain-substitution.md).
+
+| # | Acceptance criterion | Outcome |
+|---|---|---|
+| 1 | Spectral runs on every PR touching `specs/*.yaml` | ✅ **Met, partly literally.** `@asyncapi/parser@3.6.3` bundles `@stoplight/spectral-core`, so Spectral genuinely runs against the event contract; the OpenAPI files use Redocly's own engine. The gate runs on *every* PR, not only spec-touching ones — stronger than asked. |
+| 2 | `openapi-spec-validator` confirms 3.1 conformance | ✅ **Met by substitution** — `redocly lint` performs the 3.1 structural validation. Same assertion, no second language runtime. |
+| 3 | AsyncAPI CLI validates the events file | ✅ **Met by substitution** — `@asyncapi/parser` is the library the CLI wraps; calling it directly also lets the script assert channel and operation counts. |
+| 4 | House style ruleset catches missing examples and vague descriptions | 🚫 **Declined, deliberately.** It contradicts the standing decision, in force since `AS-03`, that structural errors fail the gate while style warnings are reported and tolerated — specifications are the reviewed deliverable and are not reshaped to satisfy a linter. All 25 warnings are printed on every run, not suppressed. |
+| 5 | Broken specs block merge | ✅ **Met — and only since `AUTH-001`.** Before the `main` ruleset, CI ran on pull requests but nothing prevented merging over a red check. The required status check from `ADR-0001` is what made this true. |
+
+**Unblocked:** `AUTH-020`, `AUTH-021`, `AUTH-022` are now Ready — the server-stub generation phase.
+`AUTH-023` is not: it also depends on `AUTH-004` (message bus). The same graph rule as before applies.
+
+**Phase 0 is now half closed** — `AUTH-001` and `AUTH-006` done, `AUTH-002` and `AUTH-005` Ready,
+`AUTH-003` and `AUTH-004` still chained behind `AUTH-002`.
 
 ---
 
@@ -384,13 +406,14 @@ risk summary.
    secrets policy recorded in `infra/README.md` stops being theoretical: this is the first ticket that
    introduces a real credential, and `ADR-0002` says OIDC federation is preferred over any long-lived key.
 
+2. **`AUTH-020` generate the AuthN server stub from OpenAPI** — Ready now that `AUTH-006` is closed, and
+   the first ticket that produces *code*. It also **inherits `AUTH-001`'s criterion 2**: CI must gain a
+   test step and a build artefact before it can close. `AUTH-021` and `AUTH-022` are its siblings and
+   equally Ready; `AUTH-023` is not, needing `AUTH-004` as well. Remember the standing rule that generated
+   stubs are never hand-edited.
+
 ### MEDIUM Priority
 
-2. **`AUTH-006` wire spec linting and validation into CI** — Ready, and **substantially discharged already**
-   by the `AS-03` gate plus the secrets leg added under `AUTH-001`. `npm run verify` runs four legs on every
-   push and pull request, and the check is required by the `main` ruleset. Closing it is a bookkeeping
-   decision for the owner rather than a piece of work; note it blocks `AUTH-020`..`AUTH-023`, so leaving it
-   open holds up the entire stub-generation phase.
 3. **`AUTH-005` set up observability stack** — Ready, but with nothing running to observe it is naturally
    sequenced after the first service exists.
 
@@ -405,7 +428,7 @@ None. Portfolio integration is complete; everything remaining is the `AUTH-nnn` 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
 | Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~..~~`AS-06`~~ (all closed) | 0 hrs remaining | 2026-08-14 | 2026-08-15 |
-| Sprint 2 — Phase 0 foundations | HIGH | ~~`AUTH-001`~~, `AUTH-002`..`AUTH-006` | not estimated | 2026-08-15 | TBD |
+| Sprint 2 — Phase 0 foundations | HIGH | ~~`AUTH-001`~~, `AUTH-002`..`AUTH-005`, ~~`AUTH-006`~~ | not estimated | 2026-08-15 | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 
 ---
