@@ -3,12 +3,6 @@ Feature: Account registration and first login
   I want to register an account and log in
   So that I can use the system
 
-  Background:
-    Given the AuthN service is running
-    And the AuthZ service is running
-    And the User Info service is running
-    And the event bus is running and consumers are connected
-
   Scenario: Successful registration
     When I POST to AuthN /users with a valid login_identifier and password
     Then the response status is 201
