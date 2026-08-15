@@ -2,80 +2,81 @@
 /**
  * Parses the acceptance criteria with the real Cucumber Gherkin parser.
  *
- * The feature file is the executable acceptance layer (AUTH-070 stands it up as
- * the suite). Parsing it here means a malformed scenario is caught now rather
- * than when someone first tries to run it against services that do not exist yet.
+ * The feature files are the executable acceptance layer (AUTH-070 stands them up
+ * as the suite). Parsing them here means a malformed scenario is caught now
+ * rather than when someone first tries to run it against services that do not
+ * exist yet.
  *
- * KNOWN STRUCTURAL ISSUE (AS-05): the file bundles several `Feature:` blocks.
- * The Gherkin grammar permits exactly one Feature per file, so no Cucumber-family
- * runner can execute it as it stands — it must be split first. Until that
- * decision is taken, this validator splits the file on `Feature:` boundaries and
- * parses each block independently, so the scenario syntax is still genuinely
- * checked rather than waved through.
- *
- * When AS-05 is resolved, set ACCEPT_BUNDLED_FEATURES to false. The validator
- * then requires one Feature per file and this file fails until it is split.
+ * These were one file with seven bundled `Feature:` blocks, which no
+ * Cucumber-family runner could execute (AS-05). Now that they are split, this
+ * validator enforces the rule that made the split necessary: exactly one Feature
+ * per file. A regression back to a bundled file fails the gate.
  */
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { AstBuilder, GherkinClassicTokenMatcher, Parser } from '@cucumber/gherkin';
 import { IdGenerator } from '@cucumber/messages';
 
-const SPEC = 'auth-separation_acceptance_v1.feature';
-const ACCEPT_BUNDLED_FEATURES = true; // flip to false once AS-05 splits the file
+const DIR = 'features';
+const EXPECTED_SCENARIOS = 21; // the count carried over from the pre-split file
 
-const source = await readFile(SPEC, 'utf8');
-const lines = source.split(/\r?\n/);
-
-/**
- * Split into one chunk per `Feature:` at column 0, keeping the leading comment
- * header with the first chunk so line-ish context survives.
- */
-const starts = lines.reduce((acc, line, i) => (/^Feature:/.test(line) ? [...acc, i] : acc), []);
-if (starts.length === 0) {
-  console.error(`${SPEC}: FAILED — no Feature declared.`);
+const files = (await readdir(DIR)).filter((f) => f.endsWith('.feature')).sort();
+if (files.length === 0) {
+  console.error(`${DIR}/: FAILED — no .feature files found.`);
   process.exit(1);
 }
-const blocks = starts.map((start, i) => ({
-  firstLine: start + 1,
-  text: lines.slice(i === 0 ? 0 : start, starts[i + 1] ?? lines.length).join('\n'),
-}));
 
 const parser = new Parser(new AstBuilder(IdGenerator.uuid()), new GherkinClassicTokenMatcher());
 let scenarios = 0;
 let failed = false;
 
-for (const block of blocks) {
-  let document;
-  try {
-    document = parser.parse(block.text);
-  } catch (error) {
-    console.error(`  [error] ${SPEC}:${block.firstLine} — ${error.message}`);
+for (const file of files) {
+  const path = join(DIR, file);
+  const source = await readFile(path, 'utf8');
+
+  // One Feature per file is the Gherkin grammar's rule, but the parser reports a
+  // second `Feature:` as a generic syntax error. Counting first gives a message
+  // that names the actual problem.
+  const declared = source.split(/\r?\n/).filter((l) => /^Feature:/.test(l)).length;
+  if (declared !== 1) {
+    console.error(`  [error] ${path} — declares ${declared} Feature blocks; exactly one is allowed.`);
     failed = true;
     continue;
   }
+
+  let document;
+  try {
+    document = parser.parse(source);
+  } catch (error) {
+    console.error(`  [error] ${path} — ${error.message}`);
+    failed = true;
+    continue;
+  }
+
   const children = document.feature?.children ?? [];
   const count = children.filter((c) => c.scenario).length;
+  if (count === 0) {
+    console.error(`  [error] ${path} — parsed cleanly but declares no scenarios.`);
+    failed = true;
+    continue;
+  }
   scenarios += count;
-  console.log(`  ${SPEC}:${block.firstLine} — "${document.feature.name}" (${count} scenario(s))`);
+  console.log(`  ${path} — "${document.feature.name}" (${count} scenario(s))`);
 }
 
 if (failed) {
-  console.error(`\n${SPEC}: FAILED — one or more Feature blocks did not parse.`);
+  console.error(`\n${DIR}/: FAILED — see errors above.`);
   process.exit(1);
 }
 
-if (blocks.length > 1) {
-  const message =
-    `${SPEC}: bundles ${blocks.length} Feature blocks in one file. ` +
-    'Gherkin allows one Feature per file, so this is not runnable by any ' +
-    'Cucumber-family runner until it is split (AS-05).';
-  if (!ACCEPT_BUNDLED_FEATURES) {
-    console.error(`\n${SPEC}: FAILED — ${message}`);
-    process.exit(1);
-  }
-  console.log(`\n  [known issue] ${message}`);
+// Guards the split itself: a scenario silently lost in a future refactor is
+// exactly the kind of regression a passing parse would otherwise hide.
+if (scenarios !== EXPECTED_SCENARIOS) {
+  console.error(
+    `\n${DIR}/: FAILED — expected ${EXPECTED_SCENARIOS} scenarios, found ${scenarios}. ` +
+      'If this change is intentional, update EXPECTED_SCENARIOS and say why in the commit.',
+  );
+  process.exit(1);
 }
 
-console.log(
-  `${SPEC}: valid Gherkin — ${scenarios} scenario(s) across ${blocks.length} Feature block(s).`,
-);
+console.log(`${DIR}/: valid Gherkin — ${scenarios} scenario(s) across ${files.length} file(s).`);

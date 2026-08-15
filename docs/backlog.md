@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 2 — AS-01 and AS-03 resolved; AS-05 raised by the new gate on its first run
+**Version:** 5 — AS-04 and AS-05 resolved; AS-06 raised by the split. Only AS-06 remains outstanding.
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -68,118 +68,49 @@ risk profile is entirely forward-looking and expressed as the `AUTH-nnn` program
 
 ### MEDIUM Priority (Score: 10–19)
 
-#### Risk #AS-02: Kanban board depends on three CDN scripts, contradicting its "self-contained" claim — Score: 12
-
-**Priority Score:** Security Impact (3) + Breakage Probability (7) + Maintenance Burden (2) = **12 points**
-**Impact:** The implementation Kanban — the plan of record for all 51 tickets — renders a blank page with no
-network, yet the README advertises it as self-contained.
-**Effort:** 1–2 hours
-**Status:** READY TO START
-**Affected Stacks:** documentation / `auth-separation_implementation-kanban_v1.html`
-
-**Problem:**
-`auth-separation_implementation-kanban_v1.html` lines 7–9 load React 18.2.0, ReactDOM 18.2.0 and
-babel-standalone 7.23.9 from `cdnjs.cloudflare.com`, with no `integrity` attribute. The README file index
-(line 37) describes the file as "Self-contained: open in any browser." Both cannot be true. Offline, on a
-restricted corporate network, or if cdnjs changes those paths, the board shows nothing — and the ticket
-payload is only reachable by reading the raw HTML. The handover v1 claim of "zero outward dependencies"
-was assessed on cross-*folder* file references and did not catch these.
-
-**Impact Analysis:**
-- **Security (3/10):** Three remote scripts execute with no Subresource Integrity pin. The content is a
-  static local document with no secrets, which caps the blast radius, but an unpinned CDN script is still
-  an uncontrolled execution path.
-- **Breakage (7/10):** Deterministic total failure offline. The portfolio has already solved this exact
-  problem once, by vendoring, in `markdown-renderer` (decision DR-MR-02).
-- **Maintenance (2/10):** Low; vendored files are pinned and static.
-
-**Refactor Strategy:**
-1. Vendor the three libraries into `vendor/` beside the HTML, pinned at the versions already referenced.
-2. Repoint the three `<script src>` tags at the local copies.
-3. Alternatively, pre-compile the JSX and drop babel-standalone entirely — it is a ~1 MB dev-only
-   transformer being shipped to render a static board.
-4. Verify by loading the file with the network disabled.
-
-**Success Criteria:**
-- [ ] The board renders all 51 tickets with no network access.
-- [ ] No `http(s)://` script or style source remains in the HTML.
-- [ ] The README's "self-contained" claim in the file index is true as written, or amended.
-
----
-
-#### Risk #AS-05: The acceptance feature bundles seven Features and cannot be run — Score: 11
-
-**Priority Score:** Security Impact (0) + Breakage Probability (8) + Maintenance Burden (3) = **11 points**
-**Impact:** The Gherkin file is the executable acceptance layer and item 3 of the production-readiness
-checklist, but no Cucumber-family runner can execute it in its current shape.
-**Effort:** 2–3 hours
-**Status:** READY TO START — **decision required**
-**Affected Stacks:** `auth-separation_acceptance_v1.feature`
-
-**Problem:**
-`auth-separation_acceptance_v1.feature` contains **seven `Feature:` blocks** (at lines 8, 48, 73, 101, 122,
-147 and 174) totalling 21 scenarios. The Gherkin grammar permits exactly one Feature per file. Cucumber,
-SpecFlow, Behave and every other runner in the family reject the file outright — the parser stops at the
-second `Feature:` keyword. Found by `npm run lint:gherkin` on its first run against the real parser;
-reading the file does not reveal it, because each block is individually well-formed.
-
-`AUTH-070` ("Implement Gherkin acceptance suite") would hit this on day one.
-
-**Impact Analysis:**
-- **Security (0/10):** No runtime surface.
-- **Breakage (8/10):** Total, deterministic, and load-bearing — the acceptance suite is the definition of
-  done for the whole example. It is not a latent risk; the file simply does not parse.
-- **Maintenance (3/10):** Splitting is mechanical; the ongoing cost is only that seven files replace one,
-  which is the normal Cucumber layout anyway.
-
-**Refactor Strategy — the decision:**
-1. **Split (recommended).** One file per Feature, e.g. `features/registration-and-first-login.feature`.
-   This is the conventional layout and makes the set runnable. It changes the README file index (which
-   lists one acceptance artefact) and diverges structurally from the canonical source example.
-2. **Keep one file, accept it is documentation.** Amend the README to state the file is a specification of
-   acceptance criteria rather than a runnable suite, and let `AUTH-070` do the split when it stands the
-   suite up.
-
-Interim state: `scripts/validate-gherkin.mjs` splits on `Feature:` boundaries and parses each block, so
-syntax is genuinely checked. Its `ACCEPT_BUNDLED_FEATURES` constant is `true`; setting it to `false` makes
-the gate demand one Feature per file, and is the last step of option 1.
-
-**Success Criteria:**
-- [ ] Decision recorded (split, or documented as non-runnable).
-- [ ] If split: 21 scenarios preserved across the new files, README file index updated,
-      `ACCEPT_BUNDLED_FEATURES` set to `false`, gate green.
+None outstanding.
 
 ---
 
 ### LOW Priority (Score: 0–9)
 
-#### Risk #AS-04: Project is absent from the portfolio registry — Score: 7
+#### Risk #AS-06: Only one of the seven feature files declares the service-running Background — Score: 5
 
-**Priority Score:** Security Impact (0) + Breakage Probability (2) + Maintenance Burden (5) = **7 points**
-**Impact:** No registry row means the project is invisible to every portfolio orchestration prompt.
+**Priority Score:** Security Impact (0) + Breakage Probability (3) + Maintenance Burden (2) = **5 points**
+**Impact:** Six of the seven acceptance features assume a running stack without saying so, which the runner
+must supply from somewhere.
 **Effort:** 1 hour
-**Status:** READY TO START
-**Affected Stacks:** `portfolio-prompts/README.md`, `portfolio-prompts/registry.yml`, portfolio root
+**Status:** READY TO START — **decision required**, owned by whoever implements `AUTH-070`
+**Affected Stacks:** `features/`
 
 **Problem:**
-`auth-separation` appears in neither the registry table in `portfolio-prompts/README.md` nor
-`portfolio-prompts/registry.yml`, and there is no `WORKLIST_auth-separation.md` at the portfolio root —
-the only project of twelve without one. `resume-session` reached Step 2 with no backlog path to resolve,
-which is what produced this file.
+The `Background` — "the AuthN service is running", and the same for AuthZ, User Info and the event bus —
+was written under the first `Feature:` block only. The `AS-05` split preserved that placement exactly
+rather than inventing content, so it now lives in
+`features/auth-separation_acceptance-registration-and-first-login_v1.feature` alone. The other six features
+depend on the same stack but do not state it. In the pre-split bundled file the question never arose,
+because the file could not run at all.
 
 **Impact Analysis:**
-- **Security (0/10):** None.
-- **Breakage (2/10):** Fan-outs silently skip the project rather than failing.
-- **Maintenance (5/10):** Every future prompt invocation has to be told the project's conventions by hand.
+- **Security (0/10):** No runtime surface.
+- **Breakage (3/10):** Not a parse failure — the suite runs either way. The risk is a scenario that assumes
+  a service is up and fails confusingly when it is not.
+- **Maintenance (2/10):** Either answer is cheap; repeating a `Background` in seven files is the more
+  duplicative of the two.
 
-**Refactor Strategy:**
-1. Add the registry row (status, discipline, gates, and the deviations recorded above).
-2. Add the `registry.yml` orchestration entry.
-3. Derive `WORKLIST_auth-separation.md` from this backlog via `derive-worklist`.
+**Refactor Strategy — the decision:**
+1. **Handle it once in the runner's hooks** (recommended): a `BeforeAll`-style hook asserts the stack is up.
+   No duplication, and it is where environment readiness usually belongs.
+2. **Repeat the `Background` in each file**: self-describing per file, at the cost of the same four steps
+   written seven times.
+
+This is a spec-content decision, deliberately not taken by the mechanical split.
 
 **Success Criteria:**
-- [ ] Registry row and `registry.yml` entry merged.
-- [ ] `portfolio-status` reports the project without a drift warning.
+- [ ] Decision recorded and applied consistently across `features/`.
+- [ ] Gate stays green and the scenario count stays at 21.
+
+---
 
 ---
 
@@ -195,6 +126,60 @@ pointer in the README, then published the repository publicly as
 disclosure risk before publishing: no secrets, keys, or real hostnames — every server URL is
 `*.example.internal`.
 **See:** commit `563dd6a`.
+
+#### Risk #AS-02: Kanban board depends on three CDN scripts (Score: 12) ✅ Resolved 2026-08-15
+
+**Resolution:** Vendored React 18.2.0, ReactDOM 18.2.0 and `@babel/standalone` 7.23.9 into `vendor/` at
+exactly the versions the board already referenced, obtained via `npm pack` from the npm registry rather
+than a CDN mirror, and repointed the three `<script src>` tags at the local copies. Provenance and the
+"do not repoint at a CDN" rule are recorded in `vendor/README.md`. The README file index now states the
+offline guarantee explicitly instead of merely claiming self-containment.
+
+**Verified** in headless Chromium with every non-`file://` request aborted at the network layer:
+
+| | External requests | Page errors | Ticket cards rendered |
+|---|---|---|---|
+| Before | 3 (cdnjs) | 3 | **0** |
+| After | **0** | **0** | **51** |
+
+Babel is 2.8 MB of the 2.9 MB vendored — larger than the "~1 MB" this item originally estimated. The cost
+was accepted rather than pre-compiling the JSX: pre-compiling would add a build step to a file whose value
+is that it opens from disk and works, and would replace readable inline JSX with compiled output. That
+option remains available if repository weight ever matters; the reasoning is recorded in `vendor/README.md`.
+
+#### Risk #AS-05: The acceptance feature bundles seven Features and cannot be run (Score: 11) ✅ Resolved 2026-08-15
+
+**Resolution:** Split into seven files under `features/`, one Feature each, keeping the spec set's
+filename versioning convention (`auth-separation_acceptance-<slug>_v1.feature`). A pure restructuring:
+**all 21 scenarios preserved verbatim**, confirmed by rebuilding the original body from the seven parts
+and comparing byte for byte. `features/README.md` carries the original header comment unchanged plus an
+index. The old bundled file is removed; git history retains it.
+
+`scripts/validate-gherkin.mjs` was rewritten to scan `features/`, enforce exactly one `Feature:` per file,
+and assert the total scenario count — both guards negative-tested (re-bundling two features fails;
+deleting one scenario fails on the count). The `ACCEPT_BUNDLED_FEATURES` allowance is gone, since the
+condition it tolerated no longer exists.
+
+Stale references repointed at `features/`: `auth-separation_architecture_v1.md` line 201, the README file
+index and prose, and five ticket bodies in the Kanban payload (`AUTH-030`, `AUTH-042`, `AUTH-070` ×2,
+`AUTH-072`). The board was re-rendered afterwards to confirm all 51 cards still load.
+
+Left open as `AS-06`: the `Background` sits in one file only, which the split deliberately did not change.
+**See:** PR #3.
+
+#### Risk #AS-04: Project is absent from the portfolio registry (Score: 7) ✅ Resolved 2026-08-15
+
+**Resolution:** Added the `registry.yml` row and regenerated the README registry table with
+`tools/render-registry.py` (12 projects); `python tools/check-library.py` passes. Added the root-tracked
+`WORKLIST_auth-separation.md`, derived from this backlog — the two remaining `AS-nn` items plus `AUTH-001`,
+with the other 50 `AUTH-nnn` tickets deliberately omitted because every one is gated behind `AUTH-001`.
+
+Recorded as `presentation_role: methodology` rather than `showcase`: a contracts-only SDD exemplar with
+nothing implemented sits in the same family as the prompt library, not alongside the test-automation
+suites. Flip it if the project should reach the landing page. `orchestration_target: true`, gate
+`npm run verify` — Docker-free and fast, so it is safe for the fan-outs. No `deviations:` block: the
+backlog is at the default path.
+**See:** portfolio-prompts PR #62 and test-automation-portfolio PR #76.
 
 #### Risk #AS-03: No gate command, so the project cannot be orchestrated (Score: 10) ✅ Resolved 2026-08-15
 
@@ -217,10 +202,10 @@ The remaining `AS-03` success criterion, naming the gate in the registry row, be
 | Priority | Count | Total Effort | Status Distribution |
 |---|---|---|---|
 | HIGH (20–30) | 0 | — | — |
-| MEDIUM (10–19) | 2 | 3–5 hrs | 1 READY TO START, 1 awaiting decision |
-| LOW (0–9) | 1 | 1 hr | 1 READY TO START |
-| **Total Outstanding (`AS-nn`)** | **3** | **4–6 hrs** | `AS-02`, `AS-04`, `AS-05` |
-| Resolved | 2 | 3–5 hrs completed | `AS-01`, `AS-03` |
+| MEDIUM (10–19) | 0 | — | — |
+| LOW (0–9) | 1 | 1 hr | 1 awaiting decision (`AS-06`) |
+| **Total Outstanding (`AS-nn`)** | **1** | **1 hr** | `AS-06` |
+| Resolved | 5 | 7–11 hrs completed | `AS-01`, `AS-02`, `AS-03`, `AS-04`, `AS-05` |
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
@@ -355,21 +340,15 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 ### HIGH Priority
 
-1. **`AS-05` decide the acceptance-file split** — 2–3 hrs, needs an owner decision. Everything downstream
-   of `AUTH-070` rests on a runnable suite.
-2. **`AUTH-001` monorepo and CI/CD scaffolding** — the only Ready ticket on the board and the root of the
+1. **`AUTH-001` monorepo and CI/CD scaffolding** — the only Ready ticket on the board and the root of the
    dependency graph. It shrank once `AS-01` and `AS-03` landed: the repository, licence, CI workflow and
    spec-lint step already exist, so what remains is the `services/` layout, branch protection and
    code-owners.
 
-### MEDIUM Priority
-
-1. **`AS-02` vendor the Kanban's CDN dependencies** — 1–2 hrs, restores the self-contained claim.
-
 ### LOW Priority
 
-1. **`AS-04` registry row and worklist** — 1 hr, now unblocked: the GitHub URL and the `npm run verify`
-   gate both exist.
+1. **`AS-06` decide where the service-running `Background` belongs** — 1 hr; naturally folds into
+   `AUTH-070`.
 
 ---
 
@@ -377,7 +356,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
-| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-03`~~, `AS-02`, `AS-04`, `AS-05` | 4–6 hrs remaining | 2026-08-14 | in progress |
+| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, ~~`AS-04`~~, ~~`AS-05`~~, `AS-06` | 1 hr remaining | 2026-08-14 | in progress |
 | Sprint 2 — Phase 0 foundations | HIGH | `AUTH-001`..`AUTH-006` | not estimated | TBD | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 

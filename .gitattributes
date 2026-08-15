@@ -1,0 +1,5 @@
+# Vendored third-party libraries are stored byte-identical to the files published
+# in their npm tarballs (verified by git hash-object at the time of vendoring).
+# Line-ending normalisation would silently break that guarantee on checkout, so
+# these are excluded from it.
+vendor/*.js -text
