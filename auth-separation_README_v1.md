@@ -24,10 +24,10 @@ Each service has its own data store, its own deployment, and its own operational
 |------|--------|---------|
 | `auth-separation_README_v1.md` | Markdown | This file. Orientation and usage guide. |
 | `auth-separation_architecture_v1.md` | Markdown | Trust boundaries, data flows, token model, sequence diagrams. |
-| `auth-separation_authn-api_v1.yaml` | OpenAPI 3.1 | AuthN service contract: login, token refresh, MFA, password reset. |
-| `auth-separation_authz-api_v1.yaml` | OpenAPI 3.1 | AuthZ service contract: permission checks, role assignment, policy evaluation. |
-| `auth-separation_userinfo-api_v1.yaml` | OpenAPI 3.1 | User Info service contract: profile CRUD, preferences, consent. |
-| `auth-separation_events_v1.yaml` | AsyncAPI 3.0 | Cross-service events published on a message bus. |
+| `specs/auth-separation_authn-api_v1.yaml` | OpenAPI 3.1 | AuthN service contract: login, token refresh, MFA, password reset. |
+| `specs/auth-separation_authz-api_v1.yaml` | OpenAPI 3.1 | AuthZ service contract: permission checks, role assignment, policy evaluation. |
+| `specs/auth-separation_userinfo-api_v1.yaml` | OpenAPI 3.1 | User Info service contract: profile CRUD, preferences, consent. |
+| `specs/auth-separation_events_v1.yaml` | AsyncAPI 3.0 | Cross-service events published on a message bus. |
 | `features/*.feature` | Gherkin | End-to-end behavioural acceptance criteria: seven feature files, 21 scenarios. See `features/README.md`. |
 | `auth-separation_pci-compliance_v1.md` | Markdown | PCI DSS-style compliance scope for AuthN (credential handling). |
 | `auth-separation_gdpr-compliance_v1.md` | Markdown | GDPR compliance scope for User Info (personal data and data subject rights). |
@@ -35,6 +35,27 @@ Each service has its own data store, its own deployment, and its own operational
 | `auth-separation_deployment-topology_v1.md` | Markdown | Design doc on running each service in its own Docker instance per host, with positives, negatives, and alternatives. |
 | `auth-separation_database-spec_v1.md` | Markdown | Technology-agnostic database specification: per-service data model, indexes, access patterns, encryption, retention, backup, and required capabilities. |
 | `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser, with no network — its libraries are vendored in `vendor/`. |
+
+### Repository layout
+
+The repository carries the monorepo skeleton the spec set expects (`AUTH-001`). The service directories
+are deliberately empty of code — the whole point of this repository is that the specification exists
+before the implementation does.
+
+| Directory | Holds | State |
+|---|---|---|
+| `specs/` | The three OpenAPI 3.1 contracts and the AsyncAPI 3.0 event contract. | Populated — the reviewed deliverable. |
+| `features/` | Gherkin acceptance criteria: seven feature files, 21 scenarios. | Populated. |
+| `services/authn/` | AuthN implementation, generated from `specs/auth-separation_authn-api_v1.yaml`. | Empty by design. |
+| `services/authz/` | AuthZ implementation, generated from `specs/auth-separation_authz-api_v1.yaml`. | Empty by design. |
+| `services/userinfo/` | User Info implementation, generated from `specs/auth-separation_userinfo-api_v1.yaml`. | Empty by design. |
+| `infra/` | Deployment and infrastructure definitions per `auth-separation_deployment-topology_v1.md`. | Empty by design. |
+| `docs/` | Project tracking: backlog, decisions, and implementation logs. | Populated. |
+| `scripts/`, `vendor/` | Spec-validation tooling and the Kanban's vendored libraries. | Populated, dev-only. |
+
+Each service directory carries a `README.md` stating which contract governs it and which working rules
+apply. Ownership is mapped per directory in [`.github/CODEOWNERS`](.github/CODEOWNERS) — which requests
+review but only *gates* it once branch protection requires code-owner review.
 
 The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin files are the executable acceptance layer. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
 

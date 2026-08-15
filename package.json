@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "lint:openapi": "redocly lint auth-separation_authn-api_v1.yaml auth-separation_authz-api_v1.yaml auth-separation_userinfo-api_v1.yaml",
+    "lint:openapi": "redocly lint specs/auth-separation_authn-api_v1.yaml specs/auth-separation_authz-api_v1.yaml specs/auth-separation_userinfo-api_v1.yaml",
     "lint:asyncapi": "node scripts/validate-asyncapi.mjs",
     "lint:gherkin": "node scripts/validate-gherkin.mjs",
     "verify": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:gherkin"
