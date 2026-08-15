@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
+**Version:** 10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -439,6 +439,15 @@ None. Portfolio integration is complete; everything remaining is the `AUTH-nnn` 
 - Update the version number at the top when items change status.
 - This file is the source of truth for **status**; the Kanban HTML is the source of truth for **ticket
   content** (description, acceptance criteria, spec rationale). Keep the split — do not fork the detail.
+- **Closing an `AUTH-nnn` ticket is a two-step edit.** Mark it Done in the phase table here, then run
+  `npm run kanban:sync` from the repository root. The board's card columns and summary counts are
+  **generated** from this file plus the dependency graph (`ADR-0004`); they are not hand-edited. The sync
+  run prints any rows here whose Status cell it cannot reconcile — update those by hand, since they carry
+  dates and ADR references a generator must not author. `npm run verify` fails while the two disagree.
+- **Never promote tickets by reading the closed ticket's `blocks` list.** A ticket becomes Ready only
+  when *every* entry in its `blockedBy` is Done, and the two differ often: closing `AUTH-001` promoted
+  three of the four it lists, and closing `AUTH-002` promotes five tickets spread across two phase
+  tables. Let the sync script derive it.
 - Cross-reference code review findings in `.review/` once reviews begin.
 - Mark completion dates when items move to ✅ Resolved, and record effort actuals against the
   `AUTH-nnn` tickets as they close, since the source carries no estimates.

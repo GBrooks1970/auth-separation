@@ -134,6 +134,7 @@ npm run verify
 | `npm run lint:asyncapi` | The AsyncAPI 3.0 event contract | `@asyncapi/parser` |
 | `npm run lint:gherkin` | The Gherkin acceptance criteria | `@cucumber/gherkin` |
 | `npm run lint:secrets` | Every tracked file, for committed credentials | in-repo, `git ls-files` |
+| `npm run lint:kanban` | The Kanban board's status against the backlog | in-repo, dependency-graph derivation |
 
 Structural errors fail the gate. Style warnings are reported but tolerated: the specifications are this
 project's reviewed deliverable and are not reshaped to satisfy a linter's house style. The same command
@@ -170,3 +171,15 @@ contracts, and compliance scope, never vendors, keys, or real hostnames.
 Outstanding work lives in [`docs/backlog.md`](docs/backlog.md), which is the source of truth for **status**.
 `auth-separation_implementation-kanban_v1.html` remains the source of truth for **ticket content** —
 descriptions, acceptance criteria, and the dependency graph behind all 51 tickets.
+
+The board's own status fields are **generated from those two**, not authored: mark a ticket Done in the
+backlog, then run
+
+```bash
+npm run kanban:sync
+```
+
+which recomputes every card's column from the dependency graph — a ticket is Ready only when *all* its
+blockers are Done — and recounts the board's summary. `npm run lint:kanban` is the same check in
+read-only mode and runs inside `npm run verify`, so the board cannot drift from the backlog unnoticed.
+Reasoning in [`docs/adr/0004-kanban-status-is-generated.md`](docs/adr/0004-kanban-status-is-generated.md).
