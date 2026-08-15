@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 5 — AS-04 and AS-05 resolved; AS-06 raised by the split. Only AS-06 remains outstanding.
+**Version:** 6 — AS-06 resolved. **Zero outstanding `AS-nn` items**; the implementation programme (`AUTH-001` onward) is all that remains.
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -31,7 +31,12 @@ and diff-verified against its canonical source. No service code and no deploymen
 machine-checked by `npm run verify` in CI. The repository's first commit (`7d4dbcd`) is the spec set alone —
 deliberate SDD evidence that the specification preceded the code.
 
-Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT).
+Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT), registered in the portfolio
+(`presentation_role: methodology`, gate `npm run verify`), with `WORKLIST_auth-separation.md` tracked at the
+portfolio root.
+
+**Portfolio integration is complete.** `AS-01`..`AS-06` are all closed, so the only work left is the
+implementation programme itself, starting at `AUTH-001`.
 
 **Definition of done for the whole project** is the 10-item production-readiness checklist in
 `auth-separation_README_v1.md` §"Production-readiness checklist". Do not restate it here; that list is
@@ -74,49 +79,29 @@ None outstanding.
 
 ### LOW Priority (Score: 0–9)
 
-#### Risk #AS-06: Only one of the seven feature files declares the service-running Background — Score: 5
-
-**Priority Score:** Security Impact (0) + Breakage Probability (3) + Maintenance Burden (2) = **5 points**
-**Impact:** Six of the seven acceptance features assume a running stack without saying so, which the runner
-must supply from somewhere.
-**Effort:** 1 hour
-**Status:** READY TO START — **decision required**, owned by whoever implements `AUTH-070`
-**Affected Stacks:** `features/`
-
-**Problem:**
-The `Background` — "the AuthN service is running", and the same for AuthZ, User Info and the event bus —
-was written under the first `Feature:` block only. The `AS-05` split preserved that placement exactly
-rather than inventing content, so it now lives in
-`features/auth-separation_acceptance-registration-and-first-login_v1.feature` alone. The other six features
-depend on the same stack but do not state it. In the pre-split bundled file the question never arose,
-because the file could not run at all.
-
-**Impact Analysis:**
-- **Security (0/10):** No runtime surface.
-- **Breakage (3/10):** Not a parse failure — the suite runs either way. The risk is a scenario that assumes
-  a service is up and fails confusingly when it is not.
-- **Maintenance (2/10):** Either answer is cheap; repeating a `Background` in seven files is the more
-  duplicative of the two.
-
-**Refactor Strategy — the decision:**
-1. **Handle it once in the runner's hooks** (recommended): a `BeforeAll`-style hook asserts the stack is up.
-   No duplication, and it is where environment readiness usually belongs.
-2. **Repeat the `Background` in each file**: self-describing per file, at the cost of the same four steps
-   written seven times.
-
-This is a spec-content decision, deliberately not taken by the mechanical split.
-
-**Success Criteria:**
-- [ ] Decision recorded and applied consistently across `features/`.
-- [ ] Gate stays green and the scenario count stays at 21.
-
----
+None outstanding.
 
 ---
 
 ### Resolved Risks
 
 _Resolved items are kept, never deleted._
+
+#### Risk #AS-06: Only one of the seven feature files declares the service-running Background (Score: 5) ✅ Resolved 2026-08-15
+
+**Decision:** option (a) — environment readiness is the runner's job, asserted once in a `BeforeAll`-style
+hook, not repeated as a `Background` in seven files.
+
+**Resolution:** Removed the `Background` from
+`features/auth-separation_acceptance-registration-and-first-login_v1.feature`, the only file that carried
+it. All seven files are now consistent and no feature file declares one. The four steps are **not lost**:
+`features/README.md` states them as the suite-wide precondition that must hold before any scenario runs,
+and `AUTH-070`'s acceptance criteria in the Kanban now require the hook that asserts them. The requirement
+is unchanged; only its home moved.
+
+Scenario count stays at **21 across 7 files** (a `Background` is not a scenario), `npm run verify` green,
+and the Kanban re-rendered offline at 51 cards after the ticket edit.
+**See:** PR #4.
 
 #### Risk #AS-01: Repository is local-only and unlicensed (Score: 8) ✅ Resolved 2026-08-15
 
@@ -203,9 +188,9 @@ The remaining `AS-03` success criterion, naming the gate in the registry row, be
 |---|---|---|---|
 | HIGH (20–30) | 0 | — | — |
 | MEDIUM (10–19) | 0 | — | — |
-| LOW (0–9) | 1 | 1 hr | 1 awaiting decision (`AS-06`) |
-| **Total Outstanding (`AS-nn`)** | **1** | **1 hr** | `AS-06` |
-| Resolved | 5 | 7–11 hrs completed | `AS-01`, `AS-02`, `AS-03`, `AS-04`, `AS-05` |
+| LOW (0–9) | 0 | — | — |
+| **Total Outstanding (`AS-nn`)** | **0** | **—** | none |
+| Resolved | 6 | 8–12 hrs completed | `AS-01`..`AS-06` |
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
@@ -347,8 +332,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 ### LOW Priority
 
-1. **`AS-06` decide where the service-running `Background` belongs** — 1 hr; naturally folds into
-   `AUTH-070`.
+None. Portfolio integration is complete; everything remaining is the `AUTH-nnn` programme.
 
 ---
 
@@ -356,7 +340,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
-| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, ~~`AS-04`~~, ~~`AS-05`~~, `AS-06` | 1 hr remaining | 2026-08-14 | in progress |
+| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~..~~`AS-06`~~ (all closed) | 0 hrs remaining | 2026-08-14 | 2026-08-15 |
 | Sprint 2 — Phase 0 foundations | HIGH | `AUTH-001`..`AUTH-006` | not estimated | TBD | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 

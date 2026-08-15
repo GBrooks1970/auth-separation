@@ -30,13 +30,25 @@ The header comment from the original file, unchanged:
 Filenames keep the spec set's versioning convention: the version is encoded in the filename, so a
 breaking change to a feature produces a new `_v2` file rather than an in-place rewrite.
 
-## Open question for whoever implements AUTH-070
+## Environment readiness is the runner's job, not a Background
 
-The `Background` — the four "…service is running" steps — was written under the first Feature only, and
-the split preserves that exactly rather than inventing content. The other six features assume the same
-running stack but do not state it. Deciding whether to repeat the `Background` in each file, or to handle
-it once in the runner's hooks, is a spec-content decision left to the owner (`AS-06`), not something the
-mechanical split should have taken.
+**Every scenario in every file here assumes the full stack is up.** That precondition is stated once, here,
+and must be asserted once by the runner — in a `BeforeAll`-style hook — rather than repeated as a
+`Background` in seven files (`AS-06`).
+
+The suite must not begin until all four are true:
+
+- the AuthN service is running
+- the AuthZ service is running
+- the User Info service is running
+- the event bus is running and consumers are connected
+
+These four steps previously sat as a `Background` under the first Feature only — a leftover from the
+pre-split bundled file, which meant one file declared the precondition and six relied on it silently.
+The `Background` has been removed so all seven files are consistent and readiness lives in exactly one
+place. The requirement itself is unchanged; only its home has moved.
+
+`AUTH-070` is the ticket that implements the hook, and its acceptance criteria record this.
 
 ## Validation
 
