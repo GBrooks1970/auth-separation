@@ -8,8 +8,8 @@
 
 # auth-separation — Backlog
 
-**Version:** 1 — first backlog; derived from the implementation Kanban at repository creation
-**Last Updated:** 2026-08-14
+**Version:** 2 — AS-01 and AS-03 resolved; AS-05 raised by the new gate on its first run
+**Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
 This backlog tracks two distinct bodies of work: the **portfolio-integration items** (`AS-nn`) that make this
@@ -26,9 +26,12 @@ sequence is fixed by the graph rather than by score.
 
 ## Status
 
-🟡 **Specification complete, nothing implemented.** The 13-artefact SDD spec set is in place and
-diff-verified against its canonical source. No service code, no CI, no deployment. The repository's first
-commit (`7d4dbcd`) is the spec set alone — deliberate SDD evidence that the specification preceded the code.
+🟡 **Specification complete and validated, nothing implemented.** The 13-artefact SDD spec set is in place
+and diff-verified against its canonical source. No service code and no deployment — but the specs are now
+machine-checked by `npm run verify` in CI. The repository's first commit (`7d4dbcd`) is the spec set alone —
+deliberate SDD evidence that the specification preceded the code.
+
+Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT).
 
 **Definition of done for the whole project** is the 10-item production-readiness checklist in
 `auth-separation_README_v1.md` §"Production-readiness checklist". Do not restate it here; that list is
@@ -104,77 +107,51 @@ was assessed on cross-*folder* file references and did not catch these.
 
 ---
 
-#### Risk #AS-03: No gate command, so the project cannot be orchestrated — Score: 10
+#### Risk #AS-05: The acceptance feature bundles seven Features and cannot be run — Score: 11
 
-**Priority Score:** Security Impact (0) + Breakage Probability (4) + Maintenance Burden (6) = **10 points**
-**Impact:** Every portfolio registry row names a gate command; without one, the orchestration prompts have
-nothing to run and spec drift is caught by nobody.
-**Effort:** 2–4 hours
-**Status:** READY TO START
-**Affected Stacks:** repository root / CI
+**Priority Score:** Security Impact (0) + Breakage Probability (8) + Maintenance Burden (3) = **11 points**
+**Impact:** The Gherkin file is the executable acceptance layer and item 3 of the production-readiness
+checklist, but no Cucumber-family runner can execute it in its current shape.
+**Effort:** 2–3 hours
+**Status:** READY TO START — **decision required**
+**Affected Stacks:** `auth-separation_acceptance_v1.feature`
 
 **Problem:**
-The registry contract requires a `Gates:` entry per project (for example `npm run verify`). This repository
-has no runnable command at all. The three OpenAPI 3.1 files, the AsyncAPI 3.0 file and the Gherkin file are
-all machine-checkable *today*, before any service exists — an invalid spec would otherwise be discovered
-only when `AUTH-020` tries to generate a stub from it.
+`auth-separation_acceptance_v1.feature` contains **seven `Feature:` blocks** (at lines 8, 48, 73, 101, 122,
+147 and 174) totalling 21 scenarios. The Gherkin grammar permits exactly one Feature per file. Cucumber,
+SpecFlow, Behave and every other runner in the family reject the file outright — the parser stops at the
+second `Feature:` keyword. Found by `npm run lint:gherkin` on its first run against the real parser;
+reading the file does not reveal it, because each block is individually well-formed.
+
+`AUTH-070` ("Implement Gherkin acceptance suite") would hit this on day one.
 
 **Impact Analysis:**
 - **Security (0/10):** No runtime surface.
-- **Breakage (4/10):** Undetected spec drift propagates into generated stubs later in the programme.
-- **Maintenance (6/10):** Without a gate the project is invisible to `portfolio-status`,
-  `loop-worklist` and the fan-out orchestrators.
+- **Breakage (8/10):** Total, deterministic, and load-bearing — the acceptance suite is the definition of
+  done for the whole example. It is not a latent risk; the file simply does not parse.
+- **Maintenance (3/10):** Splitting is mechanical; the ongoing cost is only that seven files replace one,
+  which is the normal Cucumber layout anyway.
 
-**Refactor Strategy:**
-1. Add a minimal `package.json` with a `verify` script running a spec linter over the three OpenAPI files,
-   the AsyncAPI file, and a Gherkin parse of the acceptance feature.
-2. Wire the same command as a CI workflow on push and PR.
-3. Record the gate in the registry row (see `AS-04`).
+**Refactor Strategy — the decision:**
+1. **Split (recommended).** One file per Feature, e.g. `features/registration-and-first-login.feature`.
+   This is the conventional layout and makes the set runnable. It changes the README file index (which
+   lists one acceptance artefact) and diverges structurally from the canonical source example.
+2. **Keep one file, accept it is documentation.** Amend the README to state the file is a specification of
+   acceptance criteria rather than a runnable suite, and let `AUTH-070` do the split when it stands the
+   suite up.
 
-**Note on overlap:** this is the portfolio-gate slice of `AUTH-006` ("Wire spec linting and validation into
-CI"), pulled forward because the registry needs it now. Doing `AS-03` substantially discharges `AUTH-006`;
-close them together and say so.
+Interim state: `scripts/validate-gherkin.mjs` splits on `Feature:` boundaries and parses each block, so
+syntax is genuinely checked. Its `ACCEPT_BUNDLED_FEATURES` constant is `true`; setting it to `false` makes
+the gate demand one Feature per file, and is the last step of option 1.
 
 **Success Criteria:**
-- [ ] A single documented command validates all five machine-readable specs.
-- [ ] The command runs in CI on every push and pull request.
-- [ ] The registry row's `Gates:` field names it.
+- [ ] Decision recorded (split, or documented as non-runnable).
+- [ ] If split: 21 scenarios preserved across the new files, README file index updated,
+      `ACCEPT_BUNDLED_FEATURES` set to `false`, gate green.
 
 ---
 
 ### LOW Priority (Score: 0–9)
-
-#### Risk #AS-01: Repository is local-only and unlicensed — Score: 8
-
-**Priority Score:** Security Impact (1) + Breakage Probability (2) + Maintenance Burden (5) = **8 points**
-**Impact:** The spec set exists in exactly one place, on one machine, under no licence — so it cannot be
-shared, referenced from the portfolio landing page, or recovered if the disk fails.
-**Effort:** 1 hour
-**Status:** READY TO START
-**Affected Stacks:** repository root
-
-**Problem:**
-`git init` has been run and the specs are committed, but there is no GitHub remote and no `LICENSE` file.
-Every sibling portfolio project is a public repository under MIT. Until this one is published it is
-excluded from the portfolio's public evidence, and the "no backup" exposure is real.
-
-**Impact Analysis:**
-- **Security (1/10):** Publishing is a deliberate disclosure step; the spec set is a technology-agnostic
-  worked example and contains no secrets, real hostnames, or keys (`*.example.internal` throughout).
-- **Breakage (2/10):** Nothing breaks, but single-copy loss is unrecoverable.
-- **Maintenance (5/10):** Blocks the registry row, the landing-page link, and CI.
-
-**Refactor Strategy:**
-1. Add `LICENSE` (MIT, matching the portfolio) and confirm the canonical source example permits
-   redistribution before publishing.
-2. Create the public GitHub repository and push `main`.
-3. Add the repository to `.gitignore` at the portfolio root as a nested repo (already done).
-
-**Success Criteria:**
-- [ ] `LICENSE` present and referenced from the README.
-- [ ] Public GitHub repository exists with `main` pushed and protected.
-
----
 
 #### Risk #AS-04: Project is absent from the portfolio registry — Score: 7
 
@@ -208,7 +185,30 @@ which is what produced this file.
 
 ### Resolved Risks
 
-_None yet. Resolved items are kept, never deleted._
+_Resolved items are kept, never deleted._
+
+#### Risk #AS-01: Repository is local-only and unlicensed (Score: 8) ✅ Resolved 2026-08-15
+
+**Resolution:** Added `LICENSE` (MIT, Gary Brooks 2026, matching the portfolio convention) with a licence
+pointer in the README, then published the repository publicly as
+**https://github.com/GBrooks1970/auth-separation** and pushed `main`. The spec set was checked for
+disclosure risk before publishing: no secrets, keys, or real hostnames — every server URL is
+`*.example.internal`.
+**See:** commit `563dd6a`.
+
+#### Risk #AS-03: No gate command, so the project cannot be orchestrated (Score: 10) ✅ Resolved 2026-08-15
+
+**Resolution:** Added `npm run verify`, validating all five machine-readable artefacts — the three
+OpenAPI 3.1 contracts via `@redocly/cli` (`recommended` ruleset, `redocly.yaml`), the AsyncAPI 3.0 event
+contract via `@asyncapi/parser`, and the Gherkin acceptance criteria via the real `@cucumber/gherkin`
+parser. Wired as `.github/workflows/ci.yml` on push, PR and manual dispatch. All three legs were
+negative-tested against deliberately broken copies to confirm each fails rather than passing vacuously.
+Errors fail the gate; style warnings (25 across the OpenAPI files, all `operation-4xx-response` and
+description rules) are reported and tolerated, so the linter does not reshape the deliverable.
+
+Substantially discharges `AUTH-006` ("Wire spec linting and validation into CI") — close them together.
+The remaining `AS-03` success criterion, naming the gate in the registry row, belongs to `AS-04`.
+**See:** PR #1.
 
 ---
 
@@ -217,10 +217,10 @@ _None yet. Resolved items are kept, never deleted._
 | Priority | Count | Total Effort | Status Distribution |
 |---|---|---|---|
 | HIGH (20–30) | 0 | — | — |
-| MEDIUM (10–19) | 2 | 3–6 hrs | 2 READY TO START |
-| LOW (0–9) | 2 | 2 hrs | 2 READY TO START |
-| **Total Outstanding (`AS-nn`)** | **4** | **5–8 hrs** | 4 READY TO START |
-| Resolved | 0 | — | |
+| MEDIUM (10–19) | 2 | 3–5 hrs | 1 READY TO START, 1 awaiting decision |
+| LOW (0–9) | 1 | 1 hr | 1 READY TO START |
+| **Total Outstanding (`AS-nn`)** | **3** | **4–6 hrs** | `AS-02`, `AS-04`, `AS-05` |
+| Resolved | 2 | 3–5 hrs completed | `AS-01`, `AS-03` |
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
@@ -355,10 +355,12 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 ### HIGH Priority
 
-1. **`AS-03` gate command** — 2–4 hrs, READY, unblocks orchestration and pre-validates the specs before any
-   generator consumes them.
+1. **`AS-05` decide the acceptance-file split** — 2–3 hrs, needs an owner decision. Everything downstream
+   of `AUTH-070` rests on a runnable suite.
 2. **`AUTH-001` monorepo and CI/CD scaffolding** — the only Ready ticket on the board and the root of the
-   dependency graph. Note it partially overlaps `AS-01`/`AS-03`: doing those first shrinks it.
+   dependency graph. It shrank once `AS-01` and `AS-03` landed: the repository, licence, CI workflow and
+   spec-lint step already exist, so what remains is the `services/` layout, branch protection and
+   code-owners.
 
 ### MEDIUM Priority
 
@@ -366,8 +368,8 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 ### LOW Priority
 
-1. **`AS-01` publish and license** — 1 hr, gated on confirming redistribution of the canonical example.
-2. **`AS-04` registry row and worklist** — 1 hr, follows `AS-01` (the row needs the GitHub URL).
+1. **`AS-04` registry row and worklist** — 1 hr, now unblocked: the GitHub URL and the `npm run verify`
+   gate both exist.
 
 ---
 
@@ -375,7 +377,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
-| Sprint 1 — portfolio integration | MEDIUM/LOW | `AS-01`, `AS-02`, `AS-03`, `AS-04` | 5–8 hrs | TBD | TBD |
+| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-03`~~, `AS-02`, `AS-04`, `AS-05` | 4–6 hrs remaining | 2026-08-14 | in progress |
 | Sprint 2 — Phase 0 foundations | HIGH | `AUTH-001`..`AUTH-006` | not estimated | TBD | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 

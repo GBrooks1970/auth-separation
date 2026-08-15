@@ -97,6 +97,34 @@ A skeleton derived from this spec set is considered production-ready when it sat
 
 ---
 
+## Validating the specifications
+
+The specifications are machine-checkable today, before any service exists. One command validates all five
+machine-readable artefacts:
+
+```bash
+npm ci
+npm run verify
+```
+
+| Script | Checks | Tool |
+|---|---|---|
+| `npm run lint:openapi` | The three OpenAPI 3.1 contracts | `@redocly/cli`, `recommended` ruleset |
+| `npm run lint:asyncapi` | The AsyncAPI 3.0 event contract | `@asyncapi/parser` |
+| `npm run lint:gherkin` | The Gherkin acceptance criteria | `@cucumber/gherkin` |
+
+Structural errors fail the gate. Style warnings are reported but tolerated: the specifications are this
+project's reviewed deliverable and are not reshaped to satisfy a linter's house style. The same command
+runs in CI on every push and pull request. The tooling is dev-only — nothing here ships, and no
+implementation language has been chosen.
+
+**Known issue:** `auth-separation_acceptance_v1.feature` bundles seven `Feature:` blocks into one file.
+Gherkin permits one Feature per file, so no Cucumber-family runner can execute it until it is split. The
+validator parses each block independently and reports this explicitly rather than passing it silently;
+see `AS-05` in the backlog.
+
+---
+
 ## Licence
 
 MIT — see [`LICENSE`](LICENSE). The spec set is a technology-agnostic worked example: it names algorithms,

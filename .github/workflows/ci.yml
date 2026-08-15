@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # @redocly/cli pulls in @scarf/scarf, which phones home on install. npm 11
+  # blocks its postinstall by default; this makes the opt-out explicit rather
+  # than relying on that default holding.
+  SCARF_ANALYTICS: "false"
+
+jobs:
+  verify:
+    name: Validate specifications
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Structural validation of every machine-readable contract in the spec
+      # set: three OpenAPI 3.1 documents, the AsyncAPI 3.0 event contract, and
+      # the Gherkin acceptance criteria. No service exists yet — this is the
+      # gate that catches spec drift before a generator ever consumes it.
+      - run: npm run verify

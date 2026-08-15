@@ -1,0 +1,16 @@
+# Redocly configuration for the spec validation gate (AS-03).
+#
+# The three OpenAPI 3.1 contracts are linted against the `recommended` ruleset.
+# Structural errors fail `npm run verify`; style warnings are reported but do
+# not fail, because the specifications are the reviewed deliverable of this
+# project and should not be reshaped to satisfy a linter's house style.
+extends:
+  - recommended
+
+apis:
+  authn:
+    root: auth-separation_authn-api_v1.yaml
+  authz:
+    root: auth-separation_authz-api_v1.yaml
+  userinfo:
+    root: auth-separation_userinfo-api_v1.yaml
