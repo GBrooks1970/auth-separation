@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 4 — AS-05 resolved (acceptance file split into seven); AS-06 raised by the split
+**Version:** 5 — AS-04 and AS-05 resolved; AS-06 raised by the split. Only AS-06 remains outstanding.
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -74,33 +74,6 @@ None outstanding.
 
 ### LOW Priority (Score: 0–9)
 
-#### Risk #AS-04: Project is absent from the portfolio registry — Score: 7
-
-**Priority Score:** Security Impact (0) + Breakage Probability (2) + Maintenance Burden (5) = **7 points**
-**Impact:** No registry row means the project is invisible to every portfolio orchestration prompt.
-**Effort:** 1 hour
-**Status:** READY TO START
-**Affected Stacks:** `portfolio-prompts/README.md`, `portfolio-prompts/registry.yml`, portfolio root
-
-**Problem:**
-`auth-separation` appears in neither the registry table in `portfolio-prompts/README.md` nor
-`portfolio-prompts/registry.yml`, and there is no `WORKLIST_auth-separation.md` at the portfolio root —
-the only project of twelve without one. `resume-session` reached Step 2 with no backlog path to resolve,
-which is what produced this file.
-
-**Impact Analysis:**
-- **Security (0/10):** None.
-- **Breakage (2/10):** Fan-outs silently skip the project rather than failing.
-- **Maintenance (5/10):** Every future prompt invocation has to be told the project's conventions by hand.
-
-**Refactor Strategy:**
-1. Add the registry row (status, discipline, gates, and the deviations recorded above).
-2. Add the `registry.yml` orchestration entry.
-3. Derive `WORKLIST_auth-separation.md` from this backlog via `derive-worklist`.
-
-**Success Criteria:**
-- [ ] Registry row and `registry.yml` entry merged.
-- [ ] `portfolio-status` reports the project without a drift warning.
 #### Risk #AS-06: Only one of the seven feature files declares the service-running Background — Score: 5
 
 **Priority Score:** Security Impact (0) + Breakage Probability (3) + Maintenance Burden (2) = **5 points**
@@ -194,6 +167,20 @@ index and prose, and five ticket bodies in the Kanban payload (`AUTH-030`, `AUTH
 Left open as `AS-06`: the `Background` sits in one file only, which the split deliberately did not change.
 **See:** PR #3.
 
+#### Risk #AS-04: Project is absent from the portfolio registry (Score: 7) ✅ Resolved 2026-08-15
+
+**Resolution:** Added the `registry.yml` row and regenerated the README registry table with
+`tools/render-registry.py` (12 projects); `python tools/check-library.py` passes. Added the root-tracked
+`WORKLIST_auth-separation.md`, derived from this backlog — the two remaining `AS-nn` items plus `AUTH-001`,
+with the other 50 `AUTH-nnn` tickets deliberately omitted because every one is gated behind `AUTH-001`.
+
+Recorded as `presentation_role: methodology` rather than `showcase`: a contracts-only SDD exemplar with
+nothing implemented sits in the same family as the prompt library, not alongside the test-automation
+suites. Flip it if the project should reach the landing page. `orchestration_target: true`, gate
+`npm run verify` — Docker-free and fast, so it is safe for the fan-outs. No `deviations:` block: the
+backlog is at the default path.
+**See:** portfolio-prompts PR #62 and test-automation-portfolio PR #76.
+
 #### Risk #AS-03: No gate command, so the project cannot be orchestrated (Score: 10) ✅ Resolved 2026-08-15
 
 **Resolution:** Added `npm run verify`, validating all five machine-readable artefacts — the three
@@ -216,9 +203,9 @@ The remaining `AS-03` success criterion, naming the gate in the registry row, be
 |---|---|---|---|
 | HIGH (20–30) | 0 | — | — |
 | MEDIUM (10–19) | 0 | — | — |
-| LOW (0–9) | 2 | 2 hrs | 1 READY TO START (`AS-04`), 1 awaiting decision (`AS-06`) |
-| **Total Outstanding (`AS-nn`)** | **2** | **2 hrs** | `AS-04`, `AS-06` |
-| Resolved | 4 | 6–10 hrs completed | `AS-01`, `AS-02`, `AS-03`, `AS-05` |
+| LOW (0–9) | 1 | 1 hr | 1 awaiting decision (`AS-06`) |
+| **Total Outstanding (`AS-nn`)** | **1** | **1 hr** | `AS-06` |
+| Resolved | 5 | 7–11 hrs completed | `AS-01`, `AS-02`, `AS-03`, `AS-04`, `AS-05` |
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
@@ -360,9 +347,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 ### LOW Priority
 
-1. **`AS-04` registry row and worklist** — 1 hr, now unblocked: the GitHub URL and the `npm run verify`
-   gate both exist.
-2. **`AS-06` decide where the service-running `Background` belongs** — 1 hr; naturally folds into
+1. **`AS-06` decide where the service-running `Background` belongs** — 1 hr; naturally folds into
    `AUTH-070`.
 
 ---
@@ -371,7 +356,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | Sprint | Priority | Items | Total Effort | Start | End |
 |---|---|---|---|---|---|
-| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, ~~`AS-05`~~, `AS-04`, `AS-06` | 2 hrs remaining | 2026-08-14 | in progress |
+| Sprint 1 — portfolio integration | MEDIUM/LOW | ~~`AS-01`~~, ~~`AS-02`~~, ~~`AS-03`~~, ~~`AS-04`~~, ~~`AS-05`~~, `AS-06` | 1 hr remaining | 2026-08-14 | in progress |
 | Sprint 2 — Phase 0 foundations | HIGH | `AUTH-001`..`AUTH-006` | not estimated | TBD | TBD |
 | Sprint 3+ — Phases 1–7 | HIGH | `AUTH-010`..`AUTH-084` | not estimated | TBD | TBD |
 
