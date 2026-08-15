@@ -10,7 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { Parser } from '@asyncapi/parser';
 
-const SPEC = 'auth-separation_events_v1.yaml';
+const SPEC = 'specs/auth-separation_events_v1.yaml';
 
 // Spectral severities: 0 = error, 1 = warning, 2 = information, 3 = hint.
 const SEVERITY = ['error', 'warning', 'info', 'hint'];

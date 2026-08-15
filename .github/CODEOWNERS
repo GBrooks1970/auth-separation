@@ -1,0 +1,35 @@
+# CODEOWNERS — ownership map for auth-separation (AUTH-001)
+#
+# Maps each service directory and each specification to a named owner, so that a change to a
+# contract or a service pulls in the right reviewer automatically.
+#
+# NOTE ON ENFORCEMENT: this file only *requests* review. It becomes a gate only when branch
+# protection on `main` enables "Require review from Code Owners" — a repository-administration
+# setting that cannot be committed from a working tree. Until that is switched on, treat the
+# entries below as documentation of intent.
+#
+# The Kanban assigns notional teams per ticket (Platform engineering, Security engineering,
+# Identity, Data). This repository has a single real owner, so every path resolves to that owner;
+# split these lines into teams if and when the work is staffed that way.
+
+# Default owner for anything not matched below.
+*                       @GBrooks1970
+
+# --- Specifications: the reviewed deliverable. Changes here are contract changes. -------------
+/specs/                 @GBrooks1970
+/features/              @GBrooks1970
+
+# --- Services: each directory is owned alongside the contract that governs it. ----------------
+/services/authn/        @GBrooks1970
+/services/authz/        @GBrooks1970
+/services/userinfo/     @GBrooks1970
+
+# --- Infrastructure and CI: deployment topology, secrets wiring, the spec-validation gate. ----
+/infra/                 @GBrooks1970
+/.github/               @GBrooks1970
+/scripts/               @GBrooks1970
+
+# --- Compliance documents: PCI (AuthN), GDPR (User Info), SOC 2 (AuthZ). ----------------------
+/auth-separation_pci-compliance_v1.md    @GBrooks1970
+/auth-separation_gdpr-compliance_v1.md   @GBrooks1970
+/auth-separation_soc2-compliance_v1.md   @GBrooks1970

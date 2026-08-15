@@ -24,10 +24,10 @@ Each service has its own data store, its own deployment, and its own operational
 |------|--------|---------|
 | `auth-separation_README_v1.md` | Markdown | This file. Orientation and usage guide. |
 | `auth-separation_architecture_v1.md` | Markdown | Trust boundaries, data flows, token model, sequence diagrams. |
-| `auth-separation_authn-api_v1.yaml` | OpenAPI 3.1 | AuthN service contract: login, token refresh, MFA, password reset. |
-| `auth-separation_authz-api_v1.yaml` | OpenAPI 3.1 | AuthZ service contract: permission checks, role assignment, policy evaluation. |
-| `auth-separation_userinfo-api_v1.yaml` | OpenAPI 3.1 | User Info service contract: profile CRUD, preferences, consent. |
-| `auth-separation_events_v1.yaml` | AsyncAPI 3.0 | Cross-service events published on a message bus. |
+| `specs/auth-separation_authn-api_v1.yaml` | OpenAPI 3.1 | AuthN service contract: login, token refresh, MFA, password reset. |
+| `specs/auth-separation_authz-api_v1.yaml` | OpenAPI 3.1 | AuthZ service contract: permission checks, role assignment, policy evaluation. |
+| `specs/auth-separation_userinfo-api_v1.yaml` | OpenAPI 3.1 | User Info service contract: profile CRUD, preferences, consent. |
+| `specs/auth-separation_events_v1.yaml` | AsyncAPI 3.0 | Cross-service events published on a message bus. |
 | `features/*.feature` | Gherkin | End-to-end behavioural acceptance criteria: seven feature files, 21 scenarios. See `features/README.md`. |
 | `auth-separation_pci-compliance_v1.md` | Markdown | PCI DSS-style compliance scope for AuthN (credential handling). |
 | `auth-separation_gdpr-compliance_v1.md` | Markdown | GDPR compliance scope for User Info (personal data and data subject rights). |
@@ -35,6 +35,27 @@ Each service has its own data store, its own deployment, and its own operational
 | `auth-separation_deployment-topology_v1.md` | Markdown | Design doc on running each service in its own Docker instance per host, with positives, negatives, and alternatives. |
 | `auth-separation_database-spec_v1.md` | Markdown | Technology-agnostic database specification: per-service data model, indexes, access patterns, encryption, retention, backup, and required capabilities. |
 | `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser, with no network — its libraries are vendored in `vendor/`. |
+
+### Repository layout
+
+The repository carries the monorepo skeleton the spec set expects (`AUTH-001`). The service directories
+are deliberately empty of code — the whole point of this repository is that the specification exists
+before the implementation does.
+
+| Directory | Holds | State |
+|---|---|---|
+| `specs/` | The three OpenAPI 3.1 contracts and the AsyncAPI 3.0 event contract. | Populated — the reviewed deliverable. |
+| `features/` | Gherkin acceptance criteria: seven feature files, 21 scenarios. | Populated. |
+| `services/authn/` | AuthN implementation, generated from `specs/auth-separation_authn-api_v1.yaml`. | Empty by design. |
+| `services/authz/` | AuthZ implementation, generated from `specs/auth-separation_authz-api_v1.yaml`. | Empty by design. |
+| `services/userinfo/` | User Info implementation, generated from `specs/auth-separation_userinfo-api_v1.yaml`. | Empty by design. |
+| `infra/` | Deployment and infrastructure definitions per `auth-separation_deployment-topology_v1.md`. | Empty by design. |
+| `docs/` | Project tracking: backlog, decisions, and implementation logs. | Populated. |
+| `scripts/`, `vendor/` | Spec-validation tooling and the Kanban's vendored libraries. | Populated, dev-only. |
+
+Each service directory carries a `README.md` stating which contract governs it and which working rules
+apply. Ownership is mapped per directory in [`.github/CODEOWNERS`](.github/CODEOWNERS) — which requests
+review but only *gates* it once branch protection requires code-owner review.
 
 The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin files are the executable acceptance layer. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
 
@@ -100,7 +121,7 @@ A skeleton derived from this spec set is considered production-ready when it sat
 ## Validating the specifications
 
 The specifications are machine-checkable today, before any service exists. One command validates all five
-machine-readable artefacts:
+machine-readable artefacts and asserts that no secret has been committed alongside them:
 
 ```bash
 npm ci
@@ -112,6 +133,7 @@ npm run verify
 | `npm run lint:openapi` | The three OpenAPI 3.1 contracts | `@redocly/cli`, `recommended` ruleset |
 | `npm run lint:asyncapi` | The AsyncAPI 3.0 event contract | `@asyncapi/parser` |
 | `npm run lint:gherkin` | The Gherkin acceptance criteria | `@cucumber/gherkin` |
+| `npm run lint:secrets` | Every tracked file, for committed credentials | in-repo, `git ls-files` |
 
 Structural errors fail the gate. Style warnings are reported but tolerated: the specifications are this
 project's reviewed deliverable and are not reshaped to satisfy a linter's house style. The same command
@@ -119,7 +141,22 @@ runs in CI on every push and pull request. The tooling is dev-only — nothing h
 implementation language has been chosen.
 
 The Gherkin leg enforces one Feature per file across `features/` and asserts the total scenario count, so
-neither a re-bundled file nor a scenario quietly dropped in a refactor can pass.
+neither a re-bundled file nor a scenario quietly dropped in a refactor can pass. The secrets leg scans
+what is actually committed (`git ls-files`) for private key blocks, provider tokens, and `.env` files; its
+deliberately narrow scope is recorded in [`docs/adr/0002-committed-secret-guard.md`](docs/adr/0002-committed-secret-guard.md),
+and the CI secrets policy it enforces is in [`infra/README.md`](infra/README.md).
+
+Every leg is negative-tested against a deliberately broken copy before it is trusted. A gate that has
+never been seen to fail is not known to work.
+
+## Governance
+
+`main` is protected: changes arrive by pull request with the `Validate specifications` check green, and
+force-pushes and branch deletion are blocked — which matters here because the first commit being the
+specification set alone is this repository's central evidence. Approving reviews are **not** required,
+because a single-maintainer repository cannot satisfy that rule without bypassing it; the requirement is
+deferred against a recorded trigger in
+[`docs/adr/0001-branch-protection-without-required-approvals.md`](docs/adr/0001-branch-protection-without-required-approvals.md).
 
 ---
 

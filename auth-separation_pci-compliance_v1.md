@@ -84,7 +84,7 @@ Every authentication attempt, credential read, credential write, and key operati
 
 The minimum log retention is 12 months online and 24 months in cold storage, matching PCI DSS retention. Logs are reviewed daily by automation; anomalies (spike in failures, unusual geographic patterns, off-hours admin actions) trigger alerts to the on-call team.
 
-The `AuthenticationFailed` event in `auth-separation_events_v1.yaml` already publishes a hashed login identifier so that downstream analytics never see the raw value.
+The `AuthenticationFailed` event in `specs/auth-separation_events_v1.yaml` already publishes a hashed login identifier so that downstream analytics never see the raw value.
 
 ### Requirement 11: Test security of systems and networks regularly
 
