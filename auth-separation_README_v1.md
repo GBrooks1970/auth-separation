@@ -94,3 +94,16 @@ A skeleton derived from this spec set is considered production-ready when it sat
 8. AuthZ decisions are logged with sufficient detail to reconstruct who was allowed to do what and when.
 9. The system has an operational runbook covering credential compromise, permission misconfiguration, and consent withdrawal.
 10. Each service is independently deployable with no shared database.
+
+---
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE). The spec set is a technology-agnostic worked example: it names algorithms,
+contracts, and compliance scope, never vendors, keys, or real hostnames.
+
+## Project tracking
+
+Outstanding work lives in [`docs/backlog.md`](docs/backlog.md), which is the source of truth for **status**.
+`auth-separation_implementation-kanban_v1.html` remains the source of truth for **ticket content** —
+descriptions, acceptance criteria, and the dependency graph behind all 51 tickets.
