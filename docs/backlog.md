@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 6 — AS-06 resolved. **Zero outstanding `AS-nn` items**; the implementation programme (`AUTH-001` onward) is all that remains.
+**Version:** 7 — landing presence added to the AS-04 record. **Zero outstanding `AS-nn` items**; the implementation programme (`AUTH-001` onward) is all that remains.
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -32,8 +32,8 @@ machine-checked by `npm run verify` in CI. The repository's first commit (`7d4db
 deliberate SDD evidence that the specification preceded the code.
 
 Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT), registered in the portfolio
-(`presentation_role: methodology`, gate `npm run verify`), with `WORKLIST_auth-separation.md` tracked at the
-portfolio root.
+(`presentation_role: methodology`, gate `npm run verify`), listed on the public landing page, and with
+`WORKLIST_auth-separation.md` tracked at the portfolio root.
 
 **Portfolio integration is complete.** `AS-01`..`AS-06` are all closed, so the only work left is the
 implementation programme itself, starting at `AUTH-001`.
@@ -164,7 +164,12 @@ nothing implemented sits in the same family as the prompt library, not alongside
 suites. Flip it if the project should reach the landing page. `orchestration_target: true`, gate
 `npm run verify` — Docker-free and fast, so it is safe for the fan-outs. No `deviations:` block: the
 backlog is at the default path.
-**See:** portfolio-prompts PR #62 and test-automation-portfolio PR #76.
+**Update (2026-08-15):** landing presence completed after the item was first written up. Both `showcase`
+and `methodology` require a `portfolio-landing/data/presentation.json` entry — only `hidden` is exempt
+(ADR-001; `project-layout.md` makes landing presence part of onboarding, not a later step), and the first
+pass here missed it. `data/registry-lock.json` was refreshed from the merged canonical commit `7feaefd`
+and the methodology entry added; `check_registry_parity.py` reports 10 showcase and 2 methodology projects.
+**See:** portfolio-prompts PR #62, test-automation-portfolio PR #76, portfolio (landing) PR #33.
 
 #### Risk #AS-03: No gate command, so the project cannot be orchestrated (Score: 10) ✅ Resolved 2026-08-15
 
