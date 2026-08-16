@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
+**Version:** 12 — **implementation stack chosen: C# / .NET 9 + ASP.NET Core** (`ADR-0006`), provisional until `AUTH-020`'s DTO-fidelity spike proves it. Chosen because `dotnet build`/`dotnet test` discharge `AUTH-001`'s inherited criterion 2 unambiguously and ASP.NET Core stubs return 501 by default; the OpenAPI 3.1 concern proved illusory (the specs use no 3.1-only constructs) and no JDK is installed. v11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -430,16 +430,23 @@ named. The reasoning, and one refusal, are in
    secrets policy recorded in `infra/README.md` stops being theoretical: this is the first ticket that
    introduces a real credential, and `ADR-0002` says OIDC federation is preferred over any long-lived key.
 
-2. **`AUTH-020` generate the AuthN server stub from OpenAPI** — Ready now that `AUTH-006` is closed, and
-   the first ticket that produces *code*. It also **inherits `AUTH-001`'s criterion 2**: CI must gain a
-   test step and a build artefact before it can close. `AUTH-021` and `AUTH-022` are its siblings and
-   equally Ready; `AUTH-023` is not, needing `AUTH-004` as well. Remember the standing rule that generated
-   stubs are never hand-edited.
+2. **`AUTH-020` generate the AuthN server stub from OpenAPI** — the only startable ticket, and the first
+   that produces *code*. Stack is C# / .NET 9 (`ADR-0006`).
+   **Start with the DTO-fidelity spike:** generate the AuthN stub and verify its DTOs match
+   `components.schemas` exactly before building anything on top. 47 schemas across 19 `allOf`
+   compositions is where generators produce plausible-looking but wrong output, and finding that at step
+   one is cheap. If it fails, `ADR-0006` is superseded rather than worked around.
+   It also **inherits `AUTH-001`'s criterion 2**: CI must gain a test step and a build artefact before
+   this can close, which means a `setup-dotnet` step. Adding a CI job will not break the `main` ruleset
+   (it pins `Validate specifications` by name), but making a build job *required* would need the ruleset
+   updated.
+   `AUTH-021` and `AUTH-022` follow, reusing the generator configuration and CI shape established here.
+   Standing rule from the first generated file: **generated stubs are never hand-edited.**
 
-### MEDIUM Priority
+### Parked
 
-3. **`AUTH-005` set up observability stack** — Ready, but with nothing running to observe it is naturally
-   sequenced after the first service exists.
+Everything else. `AUTH-002`, `AUTH-005`, `AUTH-023` and the remaining 43 tickets are out of scope under
+`ADR-0005` and will not appear here as next steps until that decision is superseded.
 
 ### LOW Priority
 
