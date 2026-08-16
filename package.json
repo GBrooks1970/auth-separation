@@ -14,8 +14,9 @@
     "lint:gherkin": "node scripts/validate-gherkin.mjs",
     "lint:secrets": "node scripts/validate-secrets.mjs",
     "lint:kanban": "node scripts/sync-kanban-status.mjs --check",
+    "lint:kanban-content": "node scripts/validate-kanban-content.mjs",
     "kanban:sync": "node scripts/sync-kanban-status.mjs",
-    "verify": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:gherkin && npm run lint:secrets && npm run lint:kanban"
+    "verify": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:gherkin && npm run lint:secrets && npm run lint:kanban && npm run lint:kanban-content"
   },
   "devDependencies": {
     "@asyncapi/parser": "^3.6.3",
