@@ -8,7 +8,7 @@
 
 # auth-separation — Backlog
 
-**Version:** 10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
+**Version:** 11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
 **Last Updated:** 2026-08-15
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -40,6 +40,22 @@ Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT), r
 
 **Portfolio integration is complete.** `AS-01`..`AS-06` are all closed, so the only work left is the
 implementation programme itself, whose first ticket `AUTH-001` is now Done.
+
+**Implementation posture — a bounded slice (`ADR-0005`, 2026-08-15).** This project implements
+`AUTH-020`, `AUTH-021` and `AUTH-022` — a generated server stub per OpenAPI contract — and **nothing
+further**. The remaining **46 tickets are Parked**: out of scope, not merely unstarted. Persistence,
+business logic, infrastructure (KMS, PKI, service mesh, message bus, observability), the AsyncAPI event
+implementation, compliance controls as running code, and deployment are all explicitly excluded, as is
+`AUTH-084` and with it the README's 10-item production-readiness checklist as a pursued goal.
+
+The slice buys the one piece of evidence a contracts-only repository cannot show: that these
+specifications are complete and coherent enough to generate a compiling service skeleton. Three stubs
+returning 501 are not a working system and must not be described as one.
+
+**Parked tickets return to the graph only on an explicit, recorded decision** to extend the slice or
+resume the programme, superseding `ADR-0005`. A parked ticket becoming dependency-unblocked is not such a
+trigger — and the status generator enforces this, deriving Parked tickets to Backlog regardless of their
+blockers.
 
 **Governance (from `AUTH-001`).** `main` carries an active ruleset — pull request required, the
 `Validate specifications` check must pass, force-push and deletion blocked, **zero required approvals and no
@@ -211,17 +227,25 @@ toolchain on 2026-08-15 — see its closure record and `ADR-0003`.
 
 Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
-| Priority | Count | Done | Ready | Blocked |
+| Priority | Count | Done | Ready | Parked |
 |---|---|---:|---:|---:|
-| P0 (HIGH) | 36 | 1 (`AUTH-001`) | 4 (`AUTH-002`, `AUTH-020`, `AUTH-021`, `AUTH-022`) | 31 |
-| P1 (MEDIUM) | 13 | 1 (`AUTH-006`) | 1 (`AUTH-005`) | 11 |
+| P0 (HIGH) | 36 | 1 (`AUTH-001`) | 3 (`AUTH-020`, `AUTH-021`, `AUTH-022`) | 32 |
+| P1 (MEDIUM) | 13 | 1 (`AUTH-006`) | 0 | 12 |
 | P2 (LOW) | 2 | 0 | 0 | 2 |
-| **Total** | **51** | **2** | **5** | **44** |
+| **Total** | **51** | **2** | **3** | **46** |
 
-Note that `AUTH-001` is recorded in the Kanban as blocking four tickets, but only **three** became Ready
-when it closed: `AUTH-003` carries a second blocker (`AUTH-002`) and stays in Backlog. Readiness is a
-property of the whole dependency graph, not of the ticket that just closed — derive it, do not read it off
-the `blocks` list.
+Every remaining ticket is **Parked** under `ADR-0005` — out of scope, not merely dependency-blocked. The
+distinction matters: dependency-blocked tickets become Ready on their own as blockers close, whereas
+parked ones need a decision. Before this, `AUTH-002` and `AUTH-005` were reporting as Ready while being
+work the project had decided not to do.
+
+Two derivation rules, both learned the hard way and both now enforced by `npm run kanban:sync`:
+
+1. **Readiness is a property of the whole dependency graph**, not of the ticket that just closed.
+   `AUTH-001`'s `blocks` list names four tickets; only three became Ready, because `AUTH-003` carried a
+   second blocker. Derive it; never read it off `blocks`.
+2. **Scope beats dependency-readiness.** A parked ticket never derives to Ready however its blockers
+   resolve.
 
 ---
 
@@ -250,23 +274,23 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
 | `AUTH-001` | Set up monorepo and CI/CD scaffolding | Foundation | P0 | HIGH | — | ✅ **Done** 2026-08-15 |
-| `AUTH-002` | Provision KMS and root signing keys | Infrastructure | P0 | HIGH | `AUTH-001` | **Ready** |
-| `AUTH-003` | Establish service mesh PKI for mTLS | Infrastructure | P0 | HIGH | `AUTH-001`, `AUTH-002` | Backlog (still blocked by `AUTH-002`) |
-| `AUTH-004` | Stand up message bus | Infrastructure | P0 | HIGH | `AUTH-003` | Backlog |
-| `AUTH-005` | Set up observability stack | Infrastructure | P1 | MEDIUM | `AUTH-001` | **Ready** |
+| `AUTH-002` | Provision KMS and root signing keys | Infrastructure | P0 | HIGH | `AUTH-001` | Parked — out of scope under `ADR-0005` |
+| `AUTH-003` | Establish service mesh PKI for mTLS | Infrastructure | P0 | HIGH | `AUTH-001`, `AUTH-002` | Parked — out of scope under `ADR-0005` |
+| `AUTH-004` | Stand up message bus | Infrastructure | P0 | HIGH | `AUTH-003` | Parked — out of scope under `ADR-0005` |
+| `AUTH-005` | Set up observability stack | Infrastructure | P1 | MEDIUM | `AUTH-001` | Parked — out of scope under `ADR-0005` |
 | `AUTH-006` | Wire spec linting and validation into CI | Foundation | P1 | MEDIUM | `AUTH-001` | ✅ **Done** 2026-08-15 (`ADR-0003`) |
 
 ### Phase 1 — Databases (7 tickets)
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-010` | Provision credential database (AuthN) | Infrastructure | P0 | HIGH | `AUTH-002` | Backlog |
-| `AUTH-011` | Migrate credential schema | Feature | P0 | HIGH | `AUTH-010` | Backlog |
-| `AUTH-012` | Provision authorisation database (AuthZ) | Infrastructure | P0 | HIGH | `AUTH-002` | Backlog |
-| `AUTH-013` | Migrate authorisation schema | Feature | P0 | HIGH | `AUTH-012` | Backlog |
-| `AUTH-014` | Provision decision audit log store | Infrastructure | P0 | HIGH | `AUTH-002` | Backlog |
-| `AUTH-015` | Provision profile database (User Info) | Infrastructure | P0 | HIGH | `AUTH-002` | Backlog |
-| `AUTH-016` | Migrate profile schema with column encryption | Feature | P0 | HIGH | `AUTH-015` | Backlog |
+| `AUTH-010` | Provision credential database (AuthN) | Infrastructure | P0 | HIGH | `AUTH-002` | Parked — out of scope under `ADR-0005` |
+| `AUTH-011` | Migrate credential schema | Feature | P0 | HIGH | `AUTH-010` | Parked — out of scope under `ADR-0005` |
+| `AUTH-012` | Provision authorisation database (AuthZ) | Infrastructure | P0 | HIGH | `AUTH-002` | Parked — out of scope under `ADR-0005` |
+| `AUTH-013` | Migrate authorisation schema | Feature | P0 | HIGH | `AUTH-012` | Parked — out of scope under `ADR-0005` |
+| `AUTH-014` | Provision decision audit log store | Infrastructure | P0 | HIGH | `AUTH-002` | Parked — out of scope under `ADR-0005` |
+| `AUTH-015` | Provision profile database (User Info) | Infrastructure | P0 | HIGH | `AUTH-002` | Parked — out of scope under `ADR-0005` |
+| `AUTH-016` | Migrate profile schema with column encryption | Feature | P0 | HIGH | `AUTH-015` | Parked — out of scope under `ADR-0005` |
 
 ### Phase 2 — Service skeletons (4 tickets)
 
@@ -275,7 +299,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 | `AUTH-020` | Generate AuthN server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** — **also carries `AUTH-001` criterion 2** (see below) |
 | `AUTH-021` | Generate AuthZ server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** |
 | `AUTH-022` | Generate User Info server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** |
-| `AUTH-023` | Generate event publishers and consumers from AsyncAPI | Feature | P0 | HIGH | `AUTH-004`, `AUTH-006` | Backlog (still blocked by `AUTH-004`) |
+| `AUTH-023` | Generate event publishers and consumers from AsyncAPI | Feature | P0 | HIGH | `AUTH-004`, `AUTH-006` | Parked — out of scope under `ADR-0005` |
 
 > **Inherited from `AUTH-001` (owner decision, 2026-08-15):** `AUTH-020` also carries `AUTH-001`'s second
 > acceptance criterion — *"CI runs on every PR: lint, **test**, build artefact"*. Only the lint third was
@@ -288,60 +312,60 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-030` | Implement AuthN registration | Feature | P0 | HIGH | `AUTH-011`, `AUTH-020`, `AUTH-023` | Backlog |
-| `AUTH-031` | Implement AuthN login and token issuance | Feature | P0 | HIGH | `AUTH-030`, `AUTH-002` | Backlog |
-| `AUTH-032` | Implement JWKS endpoint | Feature | P0 | HIGH | `AUTH-002`, `AUTH-020` | Backlog |
-| `AUTH-033` | Implement refresh token rotation | Feature | P0 | HIGH | `AUTH-031` | Backlog |
-| `AUTH-034` | Implement password change and reset | Feature | P1 | MEDIUM | `AUTH-031` | Backlog |
-| `AUTH-035` | Implement MFA enrolment and challenge | Feature | P1 | MEDIUM | `AUTH-031` | Backlog |
-| `AUTH-036` | Implement AuthZ decision check | Feature | P0 | HIGH | `AUTH-013`, `AUTH-021` | Backlog |
-| `AUTH-037` | Implement AuthZ role CRUD and assignment | Feature | P0 | HIGH | `AUTH-013`, `AUTH-021` | Backlog |
-| `AUTH-038` | Implement AuthZ policy CRUD and evaluation | Feature | P1 | MEDIUM | `AUTH-036` | Backlog |
-| `AUTH-039` | Implement decision audit logging with hash chain | Feature | P0 | HIGH | `AUTH-014`, `AUTH-036` | Backlog |
-| `AUTH-040` | Implement User Info profile read/write | Feature | P0 | HIGH | `AUTH-016`, `AUTH-022` | Backlog |
-| `AUTH-041` | Implement User Info preferences | Feature | P2 | LOW | `AUTH-040` | Backlog |
-| `AUTH-042` | Implement User Info consent CRUD | Feature | P0 | HIGH | `AUTH-040` | Backlog |
-| `AUTH-043` | Implement User Info data export | Compliance | P1 | MEDIUM | `AUTH-040` | Backlog |
-| `AUTH-044` | Implement User Info account deletion | Compliance | P0 | HIGH | `AUTH-040`, `AUTH-023` | Backlog |
+| `AUTH-030` | Implement AuthN registration | Feature | P0 | HIGH | `AUTH-011`, `AUTH-020`, `AUTH-023` | Parked — out of scope under `ADR-0005` |
+| `AUTH-031` | Implement AuthN login and token issuance | Feature | P0 | HIGH | `AUTH-030`, `AUTH-002` | Parked — out of scope under `ADR-0005` |
+| `AUTH-032` | Implement JWKS endpoint | Feature | P0 | HIGH | `AUTH-002`, `AUTH-020` | Parked — out of scope under `ADR-0005` |
+| `AUTH-033` | Implement refresh token rotation | Feature | P0 | HIGH | `AUTH-031` | Parked — out of scope under `ADR-0005` |
+| `AUTH-034` | Implement password change and reset | Feature | P1 | MEDIUM | `AUTH-031` | Parked — out of scope under `ADR-0005` |
+| `AUTH-035` | Implement MFA enrolment and challenge | Feature | P1 | MEDIUM | `AUTH-031` | Parked — out of scope under `ADR-0005` |
+| `AUTH-036` | Implement AuthZ decision check | Feature | P0 | HIGH | `AUTH-013`, `AUTH-021` | Parked — out of scope under `ADR-0005` |
+| `AUTH-037` | Implement AuthZ role CRUD and assignment | Feature | P0 | HIGH | `AUTH-013`, `AUTH-021` | Parked — out of scope under `ADR-0005` |
+| `AUTH-038` | Implement AuthZ policy CRUD and evaluation | Feature | P1 | MEDIUM | `AUTH-036` | Parked — out of scope under `ADR-0005` |
+| `AUTH-039` | Implement decision audit logging with hash chain | Feature | P0 | HIGH | `AUTH-014`, `AUTH-036` | Parked — out of scope under `ADR-0005` |
+| `AUTH-040` | Implement User Info profile read/write | Feature | P0 | HIGH | `AUTH-016`, `AUTH-022` | Parked — out of scope under `ADR-0005` |
+| `AUTH-041` | Implement User Info preferences | Feature | P2 | LOW | `AUTH-040` | Parked — out of scope under `ADR-0005` |
+| `AUTH-042` | Implement User Info consent CRUD | Feature | P0 | HIGH | `AUTH-040` | Parked — out of scope under `ADR-0005` |
+| `AUTH-043` | Implement User Info data export | Compliance | P1 | MEDIUM | `AUTH-040` | Parked — out of scope under `ADR-0005` |
+| `AUTH-044` | Implement User Info account deletion | Compliance | P0 | HIGH | `AUTH-040`, `AUTH-023` | Parked — out of scope under `ADR-0005` |
 
 ### Phase 4 — Cross-service integration (4 tickets)
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-050` | Implement JWT verification middleware | Feature | P0 | HIGH | `AUTH-032` | Backlog |
-| `AUTH-051` | Wire event bus publishing and consumption | Feature | P0 | HIGH | `AUTH-023`, `AUTH-031`, `AUTH-037`, `AUTH-040` | Backlog |
-| `AUTH-052` | Implement AuthZ cache layer with event-driven invalidation | Feature | P1 | MEDIUM | `AUTH-036`, `AUTH-051` | Backlog |
-| `AUTH-053` | Implement coordinated account deletion | Compliance | P0 | HIGH | `AUTH-044`, `AUTH-051` | Backlog |
+| `AUTH-050` | Implement JWT verification middleware | Feature | P0 | HIGH | `AUTH-032` | Parked — out of scope under `ADR-0005` |
+| `AUTH-051` | Wire event bus publishing and consumption | Feature | P0 | HIGH | `AUTH-023`, `AUTH-031`, `AUTH-037`, `AUTH-040` | Parked — out of scope under `ADR-0005` |
+| `AUTH-052` | Implement AuthZ cache layer with event-driven invalidation | Feature | P1 | MEDIUM | `AUTH-036`, `AUTH-051` | Parked — out of scope under `ADR-0005` |
+| `AUTH-053` | Implement coordinated account deletion | Compliance | P0 | HIGH | `AUTH-044`, `AUTH-051` | Parked — out of scope under `ADR-0005` |
 
 ### Phase 5 — Compliance hardening (4 tickets)
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-060` | Implement key rotation procedures | Compliance | P1 | MEDIUM | `AUTH-002`, `AUTH-031`, `AUTH-040` | Backlog |
-| `AUTH-061` | Author breach response runbooks | Compliance | P1 | MEDIUM | `AUTH-031`, `AUTH-040`, `AUTH-037` | Backlog |
-| `AUTH-062` | Implement decision audit log immutable forwarding | Compliance | P0 | HIGH | `AUTH-039` | Backlog |
-| `AUTH-063` | Implement quarterly access review automation | Compliance | P2 | LOW | `AUTH-005` | Backlog |
+| `AUTH-060` | Implement key rotation procedures | Compliance | P1 | MEDIUM | `AUTH-002`, `AUTH-031`, `AUTH-040` | Parked — out of scope under `ADR-0005` |
+| `AUTH-061` | Author breach response runbooks | Compliance | P1 | MEDIUM | `AUTH-031`, `AUTH-040`, `AUTH-037` | Parked — out of scope under `ADR-0005` |
+| `AUTH-062` | Implement decision audit log immutable forwarding | Compliance | P0 | HIGH | `AUTH-039` | Parked — out of scope under `ADR-0005` |
+| `AUTH-063` | Implement quarterly access review automation | Compliance | P2 | LOW | `AUTH-005` | Parked — out of scope under `ADR-0005` |
 
 ### Phase 6 — Testing & verification (6 tickets)
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-070` | Implement Gherkin acceptance suite | Test | P0 | HIGH | `AUTH-053` | Backlog |
-| `AUTH-071` | Wire Schemathesis contract verification | Test | P0 | HIGH | `AUTH-031`, `AUTH-036`, `AUTH-040` | Backlog |
-| `AUTH-072` | Implement AsyncAPI event payload verification | Test | P1 | MEDIUM | `AUTH-051`, `AUTH-070` | Backlog |
-| `AUTH-073` | Load test AuthN login storm | Test | P1 | MEDIUM | `AUTH-031` | Backlog |
-| `AUTH-074` | Load test AuthZ decision endpoint | Test | P0 | HIGH | `AUTH-052` | Backlog |
-| `AUTH-075` | External penetration test | Test | P1 | MEDIUM | `AUTH-070` | Backlog |
+| `AUTH-070` | Implement Gherkin acceptance suite | Test | P0 | HIGH | `AUTH-053` | Parked — out of scope under `ADR-0005` |
+| `AUTH-071` | Wire Schemathesis contract verification | Test | P0 | HIGH | `AUTH-031`, `AUTH-036`, `AUTH-040` | Parked — out of scope under `ADR-0005` |
+| `AUTH-072` | Implement AsyncAPI event payload verification | Test | P1 | MEDIUM | `AUTH-051`, `AUTH-070` | Parked — out of scope under `ADR-0005` |
+| `AUTH-073` | Load test AuthN login storm | Test | P1 | MEDIUM | `AUTH-031` | Parked — out of scope under `ADR-0005` |
+| `AUTH-074` | Load test AuthZ decision endpoint | Test | P0 | HIGH | `AUTH-052` | Parked — out of scope under `ADR-0005` |
+| `AUTH-075` | External penetration test | Test | P1 | MEDIUM | `AUTH-070` | Parked — out of scope under `ADR-0005` |
 
 ### Phase 7 — Production readiness (5 tickets)
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-080` | Deploy chosen topology | Infrastructure | P0 | HIGH | `AUTH-070`, `AUTH-071` | Backlog |
-| `AUTH-081` | Multi-zone redundancy | Infrastructure | P0 | HIGH | `AUTH-080` | Backlog |
-| `AUTH-082` | DR runbook and drill | Compliance | P1 | MEDIUM | `AUTH-081` | Backlog |
-| `AUTH-083` | Security review and sign-off | Compliance | P0 | HIGH | `AUTH-070`, `AUTH-071`, `AUTH-072`, `AUTH-075`, `AUTH-082` | Backlog |
-| `AUTH-084` | Production launch and smoke tests | Feature | P0 | HIGH | `AUTH-083` | Backlog |
+| `AUTH-080` | Deploy chosen topology | Infrastructure | P0 | HIGH | `AUTH-070`, `AUTH-071` | Parked — out of scope under `ADR-0005` |
+| `AUTH-081` | Multi-zone redundancy | Infrastructure | P0 | HIGH | `AUTH-080` | Parked — out of scope under `ADR-0005` |
+| `AUTH-082` | DR runbook and drill | Compliance | P1 | MEDIUM | `AUTH-081` | Parked — out of scope under `ADR-0005` |
+| `AUTH-083` | Security review and sign-off | Compliance | P0 | HIGH | `AUTH-070`, `AUTH-071`, `AUTH-072`, `AUTH-075`, `AUTH-082` | Parked — out of scope under `ADR-0005` |
+| `AUTH-084` | Production launch and smoke tests | Feature | P0 | HIGH | `AUTH-083` | Parked — out of scope under `ADR-0005` |
 
 **Success Criteria:**
 - [ ] All 51 tickets closed.

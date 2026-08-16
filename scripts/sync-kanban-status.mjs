@@ -19,9 +19,17 @@
  *
  * WHERE AUTHORITY LIVES — this script does not invent a third source of truth.
  *
- *   docs/backlog.md   owns which tickets are DONE. That is a human decision.
+ *   docs/backlog.md   owns which tickets are DONE and which are PARKED. Both are
+ *                     human decisions.
  *   the Kanban payload owns ticket CONTENT, including the dependency graph.
  *   Ready vs Backlog  is authored by NEITHER — it is derived from the two above.
+ *
+ * PARKED is scope, not progress (ADR-0005). A parked ticket never derives to
+ * Ready however its dependencies resolve, because dependency-readiness and
+ * being-in-scope are different questions and the board previously conflated
+ * them: AUTH-002 and AUTH-005 advertised themselves as startable work the
+ * project had decided not to do. The board has no Parked column, so they render
+ * in Backlog — accurate, since they are not startable.
  *
  * That split is the existing sync rule ("the backlog owns status, the Kanban
  * owns content") made executable, and it removes the duplicate authority that
@@ -72,8 +80,15 @@ for (const line of readFileSync(BACKLOG, 'utf8').split(/\r?\n/)) {
   if (cells.length !== 7) continue;
   const cell = cells[6];
   // Keyword classification, not exact match: these cells carry dates, ADR
-  // references and explanatory clauses alongside the status word.
-  const state = /\bDone\b/.test(cell) ? 'Done' : /\bReady\b/.test(cell) ? 'Ready' : 'Backlog';
+  // references and explanatory clauses alongside the status word. Parked is
+  // tested before Done so "Parked (…, see ADR-0005)" cannot be misread.
+  const state = /\bParked\b/.test(cell)
+    ? 'Parked'
+    : /\bDone\b/.test(cell)
+      ? 'Done'
+      : /\bReady\b/.test(cell)
+        ? 'Ready'
+        : 'Backlog';
   backlogStatus.set(m[1], { state, cell });
 }
 
@@ -86,10 +101,14 @@ if (onlyBacklog.length) problems.push(`in the backlog but not the Kanban: ${only
 
 // --- Derive ------------------------------------------------------------------
 const done = new Set([...backlogStatus].filter(([, v]) => v.state === 'Done').map(([id]) => id));
+const parked = new Set([...backlogStatus].filter(([, v]) => v.state === 'Parked').map(([id]) => id));
 
 const derived = new Map();
 for (const t of tickets) {
   if (done.has(t.id)) derived.set(t.id, 'Done');
+  // Scope beats dependency-readiness: an out-of-scope ticket is not startable
+  // no matter what its blockers have done (ADR-0005).
+  else if (parked.has(t.id)) derived.set(t.id, 'Backlog');
   else if (IN_FLIGHT.has(t.status)) derived.set(t.id, t.status); // a human moved this card
   else derived.set(t.id, t.blockedBy.every((d) => done.has(d)) ? 'Ready' : 'Backlog');
 }
@@ -107,6 +126,7 @@ for (const t of tickets) {
 const staleProse = [];
 for (const [id, { state, cell }] of backlogStatus) {
   const want = derived.get(id);
+  if (state === 'Parked') continue; // scope is authored here, not derived
   if (state !== 'Done' && want !== undefined && !IN_FLIGHT.has(want) && state !== want) {
     staleProse.push(
       `${id}: backlog says "${cell}" but the graph makes it ${want} ` +
@@ -159,7 +179,8 @@ if (check) {
   }
   console.log(
     `${KANBAN}: in sync — ${tickets.length} ticket(s), ` +
-      `${Object.entries(next.byStatus).map(([k, v]) => `${v} ${k}`).join(' / ')}.`,
+      `${Object.entries(next.byStatus).map(([k, v]) => `${v} ${k}`).join(' / ')}` +
+      `${parked.size ? ` (${parked.size} parked, out of scope)` : ''}.`,
   );
   process.exit(0);
 }
