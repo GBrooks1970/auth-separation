@@ -1,6 +1,6 @@
 # 0006. C# / .NET 9 and ASP.NET Core for the generated stubs
 
-**Status:** Accepted
+**Status:** Accepted — **confirmed by spike 2026-08-15** (see "Spike outcome" below)
 **Date:** 2026-08-15
 
 ## Context
@@ -88,3 +88,49 @@ API *clients*, not server stubs; it cannot satisfy "stub compiles and serves all
 - Trade-off: this is the largest technology divergence in a Node-centric portfolio, and it means a reader
   of this repository meets C# where the rest of the portfolio is TypeScript. Accepted because the
   criterion-2 argument is concrete and the alternative was a demonstrably weaker demonstration.
+
+## Spike outcome — 2026-08-15, this decision is confirmed
+
+The provisional status above is discharged. The spike ran against
+`specs/auth-separation_authn-api_v1.yaml` in a scratch directory; **no repository files were changed by
+it**, and the stub implementation was itself generated rather than hand-written.
+
+| Check | Result |
+|---|---|
+| NSwag 14.7.1 parses OpenAPI **3.1** | **Yes** — the headline risk was unfounded |
+| DTO fidelity | **17/17 object schemas, zero property mismatches** |
+| Operations generated | **12/12** |
+| Compiles | 0 warnings, 0 errors |
+| Serves | **12/12 endpoints return 501**; unmapped paths 404 |
+
+**The type counts differ and that is correct**, which is exactly the sort of thing this spike existed to
+distinguish from a real fault. 21 named schemas produced 27 types. Three schemas (`LoginIdentifier`,
+`Password`, `UserId`) generate no type at all because they are **scalar aliases** — `string`, `string`,
+`string/uuid` — which C# correctly inlines to primitives. Nine additional types (`Keys`, `Methods`,
+`Violations`, the three `*Method` enums, `TokenPairToken_type`) come from **inline schemas** that have no
+component name to reuse. Neither is a fidelity gap.
+
+### Operational findings for `AUTH-020`
+
+1. **Pin `Microsoft.AspNetCore.Mvc.NewtonsoftJson` to `9.0.*`.** A bare `dotnet add package` resolves
+   10.0.x, which targets `net10.0` only and fails with `NU1202`. The package is required, not optional:
+   the generated DTOs carry `Newtonsoft.Json` attributes, so `AddControllers().AddNewtonsoftJson()` must
+   be wired or request bodies will not bind as the contract specifies.
+2. **`launchSettings.json` silently overrides `ASPNETCORE_URLS`.** Use
+   `dotnet run --no-launch-profile --urls …` for any scripted or CI run, or the app binds a port nobody
+   asked for.
+3. **Pass `/classname:`** to `openapi2cscontroller`, or the generated type is named `ControllerBase`.
+4. **Generate the 501 implementation too.** The abstract signatures can be transformed mechanically into
+   a concrete subclass returning `StatusCode(501)` — 12 overrides for AuthN. This keeps "no hand-edits to
+   generated files" true of the whole stub rather than only its base class, and it scales to `AUTH-021`
+   and `AUTH-022` without repeating hand-written work.
+
+### Command of record
+
+```
+dotnet nswag openapi2cscontroller \
+  /input:specs/auth-separation_authn-api_v1.yaml \
+  /classname:AuthN /namespace:AuthSeparation.AuthN \
+  /ControllerStyle:Abstract /UseActionResultType:true \
+  /output:<generated file>
+```
