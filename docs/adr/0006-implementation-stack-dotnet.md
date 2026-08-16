@@ -2,6 +2,11 @@
 
 **Status:** Accepted — **confirmed by spike 2026-08-15** (see "Spike outcome" below)
 **Date:** 2026-08-15
+**Amends tickets:** AUTH-020
+
+> `AUTH-020`'s spec note previously presented the generator as an open choice. `AUTH-021` and `AUTH-022`
+> are **not** listed here: their spec notes read "See AUTH-020 spec", so they inherit the correction by
+> reference and their own content is unchanged.
 
 ## Context
 

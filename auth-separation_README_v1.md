@@ -135,6 +135,7 @@ npm run verify
 | `npm run lint:gherkin` | The Gherkin acceptance criteria | `@cucumber/gherkin` |
 | `npm run lint:secrets` | Every tracked file, for committed credentials | in-repo, `git ls-files` |
 | `npm run lint:kanban` | The Kanban board's status against the backlog | in-repo, dependency-graph derivation |
+| `npm run lint:kanban-content` | Ticket content against the decisions that amend it | in-repo, declared-amendment check |
 
 Structural errors fail the gate. Style warnings are reported but tolerated: the specifications are this
 project's reviewed deliverable and are not reshaped to satisfy a linter's house style. The same command
