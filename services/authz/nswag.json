@@ -3,20 +3,20 @@
   "defaultVariables": null,
   "documentGenerator": {
     "fromDocument": {
-      "json": "specs/auth-separation_authn-api_v1.yaml"
+      "json": "specs/auth-separation_authz-api_v1.yaml"
     }
   },
   "codeGenerators": {
     "openApiToCSharpController": {
-      "className": "AuthN",
-      "namespace": "AuthSeparation.AuthN.Generated",
+      "className": "AuthZ",
+      "namespace": "AuthSeparation.AuthZ.Generated",
       "controllerStyle": "abstract",
       "controllerTarget": "AspNetCore",
       "useActionResultType": true,
       "generateClientInterfaces": false,
       "generateDtoTypes": true,
       "generateOptionalParameters": true,
-      "output": "src/AuthSeparation.AuthN/Generated/AuthNController.g.cs"
+      "output": "src/AuthSeparation.AuthZ/Generated/AuthZController.g.cs"
     }
   }
 }

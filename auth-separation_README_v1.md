@@ -42,7 +42,7 @@ The repository carries the monorepo skeleton the spec set expects (`AUTH-001`). 
 repository is that the specification exists before the implementation does, and its first commit is the
 spec set alone. Under the bounded slice recorded in [`docs/adr/0005-bounded-implementation-slice.md`](docs/adr/0005-bounded-implementation-slice.md),
 one thing is now built from the contracts: a **generated** server stub per service, returning 501 for every
-operation. `AUTH-020` has delivered AuthN's; AuthZ and User Info remain empty until `AUTH-021` and
+operation. `AUTH-020` and `AUTH-021` have delivered AuthN's and AuthZ's; User Info remains empty until
 `AUTH-022`. Nothing behind the stubs — persistence, business logic, infrastructure — is in scope.
 
 | Directory | Holds | State |
@@ -50,7 +50,7 @@ operation. `AUTH-020` has delivered AuthN's; AuthZ and User Info remain empty un
 | `specs/` | The three OpenAPI 3.1 contracts and the AsyncAPI 3.0 event contract. | Populated — the reviewed deliverable. |
 | `features/` | Gherkin acceptance criteria: seven feature files, 21 scenarios. | Populated. |
 | `services/authn/` | AuthN implementation, generated from `specs/auth-separation_authn-api_v1.yaml`. | Generated 501 stub, built and tested (`AUTH-020`). |
-| `services/authz/` | AuthZ implementation, generated from `specs/auth-separation_authz-api_v1.yaml`. | Empty by design. |
+| `services/authz/` | AuthZ implementation, generated from `specs/auth-separation_authz-api_v1.yaml`. | Generated 501 stub, built and tested (`AUTH-021`). |
 | `services/userinfo/` | User Info implementation, generated from `specs/auth-separation_userinfo-api_v1.yaml`. | Empty by design. |
 | `infra/` | Deployment and infrastructure definitions per `auth-separation_deployment-topology_v1.md`. | Empty by design. |
 | `docs/` | Project tracking: backlog, decisions, and implementation logs. | Populated. |

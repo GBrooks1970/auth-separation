@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AuthSeparation.AuthN\AuthSeparation.AuthN.csproj" />
+    <ProjectReference Include="..\..\src\AuthSeparation.AuthZ\AuthSeparation.AuthZ.csproj" />
     <ProjectReference Include="..\..\..\testing\AuthSeparation.Testing\AuthSeparation.Testing.csproj" />
   </ItemGroup>
 
