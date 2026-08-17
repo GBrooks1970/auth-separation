@@ -18,7 +18,8 @@
     "kanban:sync": "node scripts/sync-kanban-status.mjs",
     "generate:authn": "dotnet tool restore && dotnet nswag run services/authn/nswag.json && node scripts/generate-stub-impl.mjs services/authn/src/AuthSeparation.AuthN/Generated/AuthNController.g.cs services/authn/src/AuthSeparation.AuthN/Generated/AuthNControllerImpl.g.cs",
     "generate:authz": "dotnet tool restore && dotnet nswag run services/authz/nswag.json && node scripts/generate-stub-impl.mjs services/authz/src/AuthSeparation.AuthZ/Generated/AuthZController.g.cs services/authz/src/AuthSeparation.AuthZ/Generated/AuthZControllerImpl.g.cs",
-    "generate": "npm run generate:authn && npm run generate:authz",
+    "generate:userinfo": "dotnet tool restore && dotnet nswag run services/userinfo/nswag.json && node scripts/generate-stub-impl.mjs services/userinfo/src/AuthSeparation.UserInfo/Generated/UserInfoController.g.cs services/userinfo/src/AuthSeparation.UserInfo/Generated/UserInfoControllerImpl.g.cs",
+    "generate": "npm run generate:authn && npm run generate:authz && npm run generate:userinfo",
     "verify": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:gherkin && npm run lint:secrets && npm run lint:kanban && npm run lint:kanban-content"
   },
   "devDependencies": {
