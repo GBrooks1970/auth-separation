@@ -3,3 +3,8 @@
 # Line-ending normalisation would silently break that guarantee on checkout, so
 # these are excluded from it.
 vendor/*.js -text
+
+# Generated C# is written with whatever line endings the host uses — CRLF from
+# NSwag on Windows, LF on the Linux CI runner. Normalising them in the repository
+# is what lets the regeneration-drift check compare content rather than platform.
+*.cs text eol=lf
