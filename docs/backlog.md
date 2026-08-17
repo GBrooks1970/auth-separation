@@ -8,8 +8,8 @@
 
 # auth-separation — Backlog
 
-**Version:** 14 — **the Kanban's ticket content is now gated too.** `npm run lint:kanban-content` is a sixth `verify` leg: a decision that changes a ticket's criteria declares `**Amends tickets:**` in its ADR, and every ticket it names must cite that ADR; every ADR a ticket cites must exist. Closes the gap that let `AUTH-020` sit with four acceptance criteria while this file said five. v13 — **`AUTH-020`'s DTO-fidelity spike PASSED**, so `ADR-0006` is confirmed and no longer provisional: NSwag 14.7.1 parses the 3.1 contracts, generates 17/17 object schemas with zero property mismatches and 12/12 operations, compiles clean, and serves all 12 endpoints as 501. `AUTH-020` itself is **not started** — no service code exists yet. Four operational findings are recorded in `ADR-0006`. v12 — **implementation stack chosen: C# / .NET 9 + ASP.NET Core** (`ADR-0006`), then provisional until the spike proved it. Chosen because `dotnet build`/`dotnet test` discharge `AUTH-001`'s inherited criterion 2 unambiguously and ASP.NET Core stubs return 501 by default; the OpenAPI 3.1 concern proved illusory (the specs use no 3.1-only constructs) and no JDK is installed. v11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
-**Last Updated:** 2026-08-15
+**Version:** 15 — **`AUTH-020` is Done: the AuthN server stub is generated, built, tested and served.** The first code in the repository, and it is generated — twelve operations routed, every one returning 501, with `npm run generate` as the single regeneration command. `AUTH-001`'s inherited criterion 2 is discharged with it: a second CI lane (`Build and test services`) runs `dotnet test` and publishes a build artefact. Criterion 4 (no hand-edits to generated files) is now enforced rather than asserted — CI regenerates and fails on any difference. The tests read the contract rather than a copied list, so a specification change that is not regenerated fails the suite, and the spike's DTO-fidelity measurement is permanent. Programme now reads **3 Done / 2 Ready / 46 Parked**. v14 — **the Kanban's ticket content is now gated too.** `npm run lint:kanban-content` is a sixth `verify` leg: a decision that changes a ticket's criteria declares `**Amends tickets:**` in its ADR, and every ticket it names must cite that ADR; every ADR a ticket cites must exist. Closes the gap that let `AUTH-020` sit with four acceptance criteria while this file said five. v13 — **`AUTH-020`'s DTO-fidelity spike PASSED**, so `ADR-0006` is confirmed and no longer provisional: NSwag 14.7.1 parses the 3.1 contracts, generates 17/17 object schemas with zero property mismatches and 12/12 operations, compiles clean, and serves all 12 endpoints as 501. `AUTH-020` itself is **not started** — no service code exists yet. Four operational findings are recorded in `ADR-0006`. v12 — **implementation stack chosen: C# / .NET 9 + ASP.NET Core** (`ADR-0006`), then provisional until the spike proved it. Chosen because `dotnet build`/`dotnet test` discharge `AUTH-001`'s inherited criterion 2 unambiguously and ASP.NET Core stubs return 501 by default; the OpenAPI 3.1 concern proved illusory (the specs use no 3.1-only constructs) and no JDK is installed. v11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
+**Last Updated:** 2026-08-17
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
 This backlog tracks two distinct bodies of work: the **portfolio-integration items** (`AS-nn`) that make this
@@ -26,13 +26,15 @@ sequence is fixed by the graph rather than by score.
 
 ## Status
 
-🟡 **Specification complete and validated; scaffolding in place, nothing implemented.** The 13-artefact SDD
-spec set is in place and diff-verified against its canonical source. No service code and no deployment — but
-the specs are now machine-checked by `npm run verify` in CI, and `AUTH-001` has laid the monorepo skeleton
-around them (`specs/`, `services/{authn,authz,userinfo}/`, `infra/`, `docs/`). **The service directories are
-deliberately empty.** The repository's first commit (`7d4dbcd`) is the spec set alone — deliberate SDD
-evidence that the specification preceded the code, and now protected against force-push and deletion by the
-`main` ruleset.
+🟢 **Specification complete and validated; the first stub is generated from it.** The 13-artefact SDD
+spec set is in place and diff-verified against its canonical source, machine-checked by `npm run verify` in
+CI, and `AUTH-001` laid the monorepo skeleton around it (`specs/`, `services/{authn,authz,userinfo}/`,
+`infra/`, `docs/`). `AUTH-020` has now produced the **AuthN server stub — generated, not written**: twelve
+routed operations, every one returning 501, built and tested in CI. `services/authz/` and
+`services/userinfo/` remain **deliberately empty** until `AUTH-021` and `AUTH-022`; there is no persistence,
+no business logic and no deployment anywhere, by decision (`ADR-0005`). The repository's first commit
+(`7d4dbcd`) is the spec set alone — deliberate SDD evidence that the specification preceded the code, and
+now protected against force-push and deletion by the `main` ruleset.
 
 Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT), registered in the portfolio
 (`presentation_role: methodology`, gate `npm run verify`), listed on the public landing page, and with
@@ -229,10 +231,10 @@ Implementation programme (`AUTH-nnn`), counted separately and unestimated:
 
 | Priority | Count | Done | Ready | Parked |
 |---|---|---:|---:|---:|
-| P0 (HIGH) | 36 | 1 (`AUTH-001`) | 3 (`AUTH-020`, `AUTH-021`, `AUTH-022`) | 32 |
+| P0 (HIGH) | 36 | 2 (`AUTH-001`, `AUTH-020`) | 2 (`AUTH-021`, `AUTH-022`) | 32 |
 | P1 (MEDIUM) | 13 | 1 (`AUTH-006`) | 0 | 12 |
 | P2 (LOW) | 2 | 0 | 0 | 2 |
-| **Total** | **51** | **2** | **3** | **46** |
+| **Total** | **51** | **3** | **2** | **46** |
 
 Every remaining ticket is **Parked** under `ADR-0005` — out of scope, not merely dependency-blocked. The
 distinction matters: dependency-blocked tickets become Ready on their own as blockers close, whereas
@@ -296,7 +298,7 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 
 | ID | Ticket | Type | Priority | Tier | Blocked by | Status |
 |---|---|---|---|---|---|---|
-| `AUTH-020` | Generate AuthN server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** — **also carries `AUTH-001` criterion 2** (see below) |
+| `AUTH-020` | Generate AuthN server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | ✅ **Done** 2026-08-17 — all five criteria, incl. the inherited one (see below) |
 | `AUTH-021` | Generate AuthZ server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** |
 | `AUTH-022` | Generate User Info server stub from OpenAPI | Feature | P0 | HIGH | `AUTH-006` | **Ready** |
 | `AUTH-023` | Generate event publishers and consumers from AsyncAPI | Feature | P0 | HIGH | `AUTH-004`, `AUTH-006` | Parked — out of scope under `ADR-0005` |
@@ -307,6 +309,25 @@ filenames, with `info.version` bumped for backwards-compatible additions.
 > generated stub, so it is the first point at which a test lane and a build artefact are real. **Do not
 > close `AUTH-020` until CI runs a test step and produces a build artefact for the AuthN stub**, in
 > addition to the ticket's own acceptance criteria in the Kanban.
+>
+> **Discharged 2026-08-17.** The `Build and test services` job runs `dotnet test` and publishes the AuthN
+> stub as the `authn-stub` artefact. It is a **second lane**, separate from `Validate specifications`,
+> which alone gates merges under the `main` ruleset; promoting the build job to *required* remains a
+> repository-administration decision the owner has not taken.
+
+**How `AUTH-020` was closed, criterion by criterion (2026-08-17).**
+
+| Criterion | Evidence |
+|---|---|
+| 1. Stub compiles and serves all endpoints, 501 at first | `dotnet build` clean; 12/12 operations return 501, asserted per operation from the contract |
+| 2. Generated DTOs match `components.schemas` | Asserted by test for all 21 schemas: 17 object schemas property-for-property, three scalar aliases required to inline to primitives, `ValidationError` required to inherit from `Error` |
+| 3. Generator config committed, regeneration one command | `services/authn/nswag.json` + `npm run generate` |
+| 4. No hand-edits to generated files | **Enforced, not asserted** — CI regenerates and fails on any difference. Review cannot tell a regenerated file from an edited one |
+| 5. CI test step and build artefact (inherited) | `Build and test services` job, above |
+
+The stub's 501 implementation is itself generated (`scripts/generate-stub-impl.mjs`) from the abstract
+signatures NSwag emits, so criterion 4 is true of the whole stub rather than only its base class. The same
+script serves `AUTH-021` and `AUTH-022` unchanged.
 
 ### Phase 3 — Core implementation (15 tickets)
 
