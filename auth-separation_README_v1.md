@@ -147,9 +147,16 @@ project's reviewed deliverable and are not reshaped to satisfy a linter's house 
 runs in CI on every push and pull request.
 
 `npm run verify` validates specifications only. Building the generated stubs is a **second, separate CI
-lane** (`Build and test services`) running `dotnet build`, `dotnet test` and a regeneration-drift check on
+lane** (`Build and test services`) running `dotnet build`, `dotnet test` and `npm run lint:generated` on
 C# / .NET 9 — the stack chosen in [`docs/adr/0006-implementation-stack-dotnet.md`](docs/adr/0006-implementation-stack-dotnet.md).
 Only `Validate specifications` gates merges.
+
+`npm run lint:generated` regenerates every stub and fails if anything differs from what is committed. It
+is how "generated files are never hand-edited" is **enforced** rather than asserted: reviewing a diff
+cannot distinguish a regenerated file from an edited one.
+
+**Before changing anything in this repository, read [`docs/project-contract.md`](docs/project-contract.md)** —
+the gates that must pass, the norms that must hold, and the toolchain pins that each cost time to discover.
 
 The Gherkin leg enforces one Feature per file across `features/` and asserts the total scenario count, so
 neither a re-bundled file nor a scenario quietly dropped in a refactor can pass. The secrets leg scans

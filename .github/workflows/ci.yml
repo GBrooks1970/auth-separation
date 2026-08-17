@@ -62,14 +62,12 @@ jobs:
 
       # AUTH-020 criterion 4 — no hand-edits to generated files. Regenerating and
       # requiring an unchanged tree is the only way to enforce that; reviewing a
-      # diff cannot distinguish a regenerated file from an edited one. Untracked
-      # output counts as drift too, so the tree is checked as a whole.
+      # diff cannot distinguish a regenerated file from an edited one.
+      #
+      # The check is a script rather than inline steps so the same command runs
+      # locally, which is what `docs/project-contract.md` lists as a gate.
       - name: Generated stubs match their specifications
-        run: |
-          npm run generate
-          git add --intent-to-add --all
-          git diff --exit-code --stat \
-            || { echo "::error::Generated stubs differ from their specifications. Run 'npm run generate' and commit the result."; exit 1; }
+        run: npm run lint:generated
 
       # AUTH-001 criterion 2, deferred here: CI must run a test step...
       - run: dotnet build AuthSeparation.sln --configuration Release
