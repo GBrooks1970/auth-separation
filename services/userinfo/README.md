@@ -1,8 +1,39 @@
 # services/userinfo — User Info service
 
-**Empty by design.** Nothing is implemented here yet. This repository's value is that the
-specification demonstrably preceded the code, so this directory stays empty until the
-implementation programme reaches it.
+**A generated stub, and nothing more** (`AUTH-022`). All ten operations in the contract are routed
+and return **501 Not Implemented**. This is the stub that **closes the bounded slice**
+(`../../docs/adr/0005-bounded-implementation-slice.md`): with it, all three specifications are
+demonstrably able to generate a compiling, serving skeleton. Nothing behind it — profile storage,
+consent records, data export, account deletion — is built or in scope.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `nswag.json` | The committed generator configuration. |
+| `src/AuthSeparation.UserInfo/Generated/` | **Generated. Never hand-edited.** The routed abstract controller and its 501 implementation. |
+| `src/AuthSeparation.UserInfo/Program.cs` | Hand-written host wiring, deliberately thin. |
+| `tests/AuthSeparation.UserInfo.Tests/` | Reads the contract and asserts the stub serves it. |
+
+## Regenerating
+
+From the **repository root** — one command, and the only supported way to change anything under
+`Generated/`:
+
+```bash
+npm run generate
+```
+
+CI regenerates and fails on any difference, so a hand-edit to a generated file cannot merge.
+
+## One thing this contract has that the other two do not
+
+**Overlapping routes.** `users/me` and `users/{userId}` both match `GET /v1/users/me`, and NSwag
+emits no route constraint that would separate them. ASP.NET Core prefers the literal segment, so
+this resolves rather than raising `AmbiguousMatchException` — but nothing in the generated output
+says so, and it is decided by routing precedence rather than by anything in the specification. A
+test pins it, so a change in that behaviour surfaces as a failure rather than as a profile served
+to the wrong caller once there is anything behind the stub.
 
 ## Governing contract
 

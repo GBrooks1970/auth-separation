@@ -1,0 +1,22 @@
+{
+  "runtime": "Net90",
+  "defaultVariables": null,
+  "documentGenerator": {
+    "fromDocument": {
+      "json": "specs/auth-separation_userinfo-api_v1.yaml"
+    }
+  },
+  "codeGenerators": {
+    "openApiToCSharpController": {
+      "className": "UserInfo",
+      "namespace": "AuthSeparation.UserInfo.Generated",
+      "controllerStyle": "abstract",
+      "controllerTarget": "AspNetCore",
+      "useActionResultType": true,
+      "generateClientInterfaces": false,
+      "generateDtoTypes": true,
+      "generateOptionalParameters": true,
+      "output": "src/AuthSeparation.UserInfo/Generated/UserInfoController.g.cs"
+    }
+  }
+}
