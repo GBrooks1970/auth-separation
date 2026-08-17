@@ -14,7 +14,7 @@
 > `AS-01`..`AS-08` are closed; the `AUTH-nnn` programme is complete to the boundary that ADR set for it —
 > **5 Done / 0 Ready / 46 Parked**. No ticket is startable, by design.
 >
-> The closure is narrated in **`session-notes/auth-separation_session-notes_v7_20260817T1830Z.md`**
+> The closure is narrated in **`session-notes/auth-separation_session-notes_v7_20260817T1817Z.md`**
 > (handover **v7 — FINAL**) at the portfolio root. The gates and the norms that must hold are pinned in
 > [`project-contract.md`](project-contract.md), which is the file to read before changing anything here.
 >
