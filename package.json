@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Specification Driven Development example: separated AuthN, AuthZ and User Info services. This package exists only to validate the specifications; there is no shipped code.",
+  "description": "Specification Driven Development example: separated AuthN, AuthZ and User Info services. This package validates the specifications and drives generation of the server stubs from them; the services themselves build with the .NET SDK.",
   "license": "MIT",
   "engines": {
     "node": ">=20"
@@ -16,6 +16,8 @@
     "lint:kanban": "node scripts/sync-kanban-status.mjs --check",
     "lint:kanban-content": "node scripts/validate-kanban-content.mjs",
     "kanban:sync": "node scripts/sync-kanban-status.mjs",
+    "generate:authn": "dotnet tool restore && dotnet nswag run services/authn/nswag.json && node scripts/generate-stub-impl.mjs services/authn/src/AuthSeparation.AuthN/Generated/AuthNController.g.cs services/authn/src/AuthSeparation.AuthN/Generated/AuthNControllerImpl.g.cs",
+    "generate": "npm run generate:authn",
     "verify": "npm run lint:openapi && npm run lint:asyncapi && npm run lint:gherkin && npm run lint:secrets && npm run lint:kanban && npm run lint:kanban-content"
   },
   "devDependencies": {

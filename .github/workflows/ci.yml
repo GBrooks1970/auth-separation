@@ -31,6 +31,56 @@ jobs:
 
       # Structural validation of every machine-readable contract in the spec
       # set: three OpenAPI 3.1 documents, the AsyncAPI 3.0 event contract, and
-      # the Gherkin acceptance criteria. No service exists yet — this is the
-      # gate that catches spec drift before a generator ever consumes it.
+      # the Gherkin acceptance criteria. This is the gate that catches spec
+      # drift before a generator ever consumes it.
       - run: npm run verify
+
+  # The second lane, added by AUTH-020. It builds and tests the generated stubs
+  # and is deliberately SEPARATE from `Validate specifications`: that job
+  # validates contracts, this one exercises code generated from them (ADR-0006).
+  #
+  # The `main` ruleset pins the required check `Validate specifications` by name,
+  # so adding this job cannot break merges. Promoting it to *required* is a
+  # repository-administration change and an owner decision — it has not been made.
+  build:
+    name: Build and test services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Node is here for the generator, not for the gate: `npm run generate`
+      # drives NSwag and then derives the 501 implementation from its output.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "9.0.x"
+
+      - run: dotnet tool restore
+
+      # AUTH-020 criterion 4 — no hand-edits to generated files. Regenerating and
+      # requiring an unchanged tree is the only way to enforce that; reviewing a
+      # diff cannot distinguish a regenerated file from an edited one. Untracked
+      # output counts as drift too, so the tree is checked as a whole.
+      - name: Generated stubs match their specifications
+        run: |
+          npm run generate
+          git add --intent-to-add --all
+          git diff --exit-code --stat \
+            || { echo "::error::Generated stubs differ from their specifications. Run 'npm run generate' and commit the result."; exit 1; }
+
+      # AUTH-001 criterion 2, deferred here: CI must run a test step...
+      - run: dotnet build AuthSeparation.sln --configuration Release
+
+      - run: dotnet test AuthSeparation.sln --configuration Release --no-build
+
+      # ...and produce a build artefact.
+      - run: dotnet publish services/authn/src/AuthSeparation.AuthN --configuration Release --no-build --output artefacts/authn
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: authn-stub
+          path: artefacts/authn
+          if-no-files-found: error

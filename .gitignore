@@ -2,6 +2,13 @@
 node_modules/
 npm-debug.log*
 
+# .NET build output. The generated stub sources under services/*/src/*/Generated/
+# are committed on purpose — they are the evidence that the specifications produce
+# working code — but build intermediates and binaries are not.
+bin/
+obj/
+*.user
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

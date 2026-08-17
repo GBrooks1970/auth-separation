@@ -1,8 +1,36 @@
 # services/authn — Authentication service
 
-**Empty by design.** Nothing is implemented here yet. This repository's value is that the
-specification demonstrably preceded the code, so this directory stays empty until the
-implementation programme reaches it.
+**A generated stub, and nothing more** (`AUTH-020`). Every operation in the contract is routed and
+returns **501 Not Implemented**. That is the whole of the bounded slice for this service: it proves
+the specification generates a compiling, serving skeleton. Nothing behind it — credential storage,
+token issuance, MFA — is built or in scope (`../../docs/adr/0005-bounded-implementation-slice.md`).
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `nswag.json` | The committed generator configuration. |
+| `src/AuthSeparation.AuthN/Generated/` | **Generated. Never hand-edited.** The routed abstract controller and its 501 implementation. |
+| `src/AuthSeparation.AuthN/Program.cs` | Hand-written host wiring, deliberately thin. |
+| `tests/AuthSeparation.AuthN.Tests/` | Reads the contract and asserts the stub serves it. |
+
+## Regenerating
+
+From the **repository root** — one command, and the only supported way to change anything under
+`Generated/`:
+
+```bash
+npm run generate
+```
+
+CI regenerates and fails on any difference, so a hand-edit to a generated file cannot merge.
+
+> **A trap worth knowing before you move these files.** NSwag resolves the `documentGenerator` input
+> path against the **current working directory**, but the `output` path against the **configuration
+> file's own directory**. The two paths in `nswag.json` therefore look inconsistent and are not:
+> the input is repo-root-relative because `npm run` always executes there, and the output is
+> relative to `services/authn/`. Making them agree by inspection writes the generated file to a
+> stray nested path while reporting success.
 
 ## Governing contract
 
