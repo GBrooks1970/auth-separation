@@ -1,4 +1,5 @@
 using System.Reflection;
+using AuthSeparation.Testing;
 using Newtonsoft.Json;
 
 namespace AuthSeparation.AuthN.Tests;
@@ -14,12 +15,14 @@ namespace AuthSeparation.AuthN.Tests;
 /// </summary>
 public sealed class DtoFidelityTests
 {
+    private static readonly Contract Spec = new("specs/auth-separation_authn-api_v1.yaml");
     private static readonly Assembly Stub = typeof(Generated.AuthNController).Assembly;
+    private const string Namespace = "AuthSeparation.AuthN.Generated";
 
     public static TheoryData<string> SchemaNames()
     {
         var data = new TheoryData<string>();
-        foreach (var (name, _) in Contract.Schemas())
+        foreach (var (name, _) in Spec.Schemas())
         {
             data.Add(name);
         }
@@ -31,9 +34,9 @@ public sealed class DtoFidelityTests
     [MemberData(nameof(SchemaNames))]
     public void Each_schema_generates_a_type_whose_properties_match_it(string name)
     {
-        var schema = Contract.Schemas().Single(s => s.Name == name).Schema;
+        var schema = Spec.Schemas().Single(s => s.Name == name).Schema;
         var expected = Contract.OwnProperties(schema);
-        var type = Stub.GetType($"AuthSeparation.AuthN.Generated.{name}");
+        var type = Stub.GetType($"{Namespace}.{name}");
 
         if (expected.Count == 0)
         {
@@ -70,8 +73,8 @@ public sealed class DtoFidelityTests
         // The one composition in this contract. If the generator flattened it, the
         // test above would still pass on ValidationError's own property while the
         // relationship the specification describes had been lost.
-        var validationError = Stub.GetType("AuthSeparation.AuthN.Generated.ValidationError");
-        var error = Stub.GetType("AuthSeparation.AuthN.Generated.Error");
+        var validationError = Stub.GetType($"{Namespace}.ValidationError");
+        var error = Stub.GetType($"{Namespace}.Error");
 
         Assert.NotNull(validationError);
         Assert.NotNull(error);
@@ -83,7 +86,7 @@ public sealed class DtoFidelityTests
     {
         // ADR-0006 records 21 named schemas for AuthN, of which three are scalar
         // aliases. A contract that shrank would leave every case above passing.
-        var schemas = Contract.Schemas().ToArray();
+        var schemas = Spec.Schemas().ToArray();
         var aliases = schemas.Count(s => Contract.OwnProperties(s.Schema).Count == 0);
 
         Assert.Equal(21, schemas.Length);

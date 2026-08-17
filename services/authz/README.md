@@ -1,8 +1,47 @@
 # services/authz — Authorisation service
 
-**Empty by design.** Nothing is implemented here yet. This repository's value is that the
-specification demonstrably preceded the code, so this directory stays empty until the
-implementation programme reaches it.
+**A generated stub, and nothing more** (`AUTH-021`). All fourteen operations in the contract are
+routed and return **501 Not Implemented**. That is the whole of the bounded slice for this
+service: it proves the specification generates a compiling, serving skeleton. Nothing behind it —
+role storage, policy evaluation, the decision audit log — is built or in scope
+(`../../docs/adr/0005-bounded-implementation-slice.md`).
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `nswag.json` | The committed generator configuration. |
+| `src/AuthSeparation.AuthZ/Generated/` | **Generated. Never hand-edited.** The routed abstract controller and its 501 implementation. |
+| `src/AuthSeparation.AuthZ/Program.cs` | Hand-written host wiring, deliberately thin. |
+| `tests/AuthSeparation.AuthZ.Tests/` | Reads the contract and asserts the stub serves it. |
+
+## Regenerating
+
+From the **repository root** — one command, and the only supported way to change anything under
+`Generated/`:
+
+```bash
+npm run generate
+```
+
+CI regenerates and fails on any difference, so a hand-edit to a generated file cannot merge. The
+same trap applies as for AuthN: NSwag resolves the **input** path against the working directory
+but the **output** path against the configuration file's directory, so the two paths in
+`nswag.json` look inconsistent and are not.
+
+## Two things this contract has that AuthN's does not
+
+- **Templated paths** — `/roles/{roleKey}`, `/users/{userId}/roles` and
+  `/users/{userId}/roles/{roleKey}`, carrying six of the fourteen operations. Their parameters are
+  declared at **path-item level**, a sibling of the verbs, rather than on each operation.
+- **Optional query parameters.** `page_size` carries a schema `default` and `page_cursor` does not,
+  so NSwag rendered one as a C# optional parameter and the other as required, in that order — which
+  does not compile (`CS1737`). `generateOptionalParameters: true` makes it treat every non-required
+  parameter as optional and order them last. The flag is set in both services' configurations so
+  they stay copies of each other; it changes nothing for AuthN, which has no optional parameters.
+
+Neither is a defect in the specification. Both were fixed in generator **configuration**, never in
+generated output.
 
 ## Governing contract
 
