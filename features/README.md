@@ -14,6 +14,17 @@ The header comment from the original file, unchanged:
 > in this folder. Every scenario must pass end-to-end against a running stack of the three services and
 > the event bus before the skeleton can be considered complete.
 
+## Status: validated, not executed
+
+**Nothing runs these scenarios today.** `npm run lint:gherkin` parses every file with the real Cucumber
+Gherkin parser and asserts one `Feature:` per file and 21 scenarios in total - that is a check on grammar
+and count, not on behaviour. There is no runner, no step definitions, and no service to run them against.
+
+`AUTH-070` ("Implement Gherkin acceptance suite") is the ticket that would stand them up, and it is
+**Parked** under [`../docs/adr/0005-bounded-implementation-slice.md`](../docs/adr/0005-bounded-implementation-slice.md)
+along with the rest of the programme. The header comment quoted above describes the intended end state, not
+the current one.
+
 ## Index
 
 | File | Feature | Scenarios |

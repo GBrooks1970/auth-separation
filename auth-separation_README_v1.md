@@ -62,7 +62,7 @@ Each service directory carries a `README.md` stating which contract governs it a
 apply. Ownership is mapped per directory in [`.github/CODEOWNERS`](.github/CODEOWNERS) — which requests
 review but only *gates* it once branch protection requires code-owner review.
 
-The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin files are the executable acceptance layer. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
+The OpenAPI files and the AsyncAPI file are the machine-readable contracts. The architecture and README markdown files are human-readable explanations of intent. The Gherkin files are the acceptance layer: they are validated for grammar and scenario count by `npm run lint:gherkin`, but **nothing executes them yet** - `AUTH-070` is the ticket that would, and it is parked under `ADR-0005`. The three compliance files describe the regulatory scope each service bears: PCI for AuthN, GDPR for User Info, SOC 2 for AuthZ. They sit alongside the API contracts because compliance posture is a property of the service, not a footnote to it.
 
 ---
 

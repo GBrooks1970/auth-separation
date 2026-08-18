@@ -24,7 +24,10 @@ From the **repository root** — one command, and the only supported way to chan
 npm run generate
 ```
 
-CI regenerates and fails on any difference, so a hand-edit to a generated file cannot merge. The
+CI regenerates and **reports** any difference. Note what that does and does not buy: the check runs
+in the `Build and test services` job, which is **not a required status check**, so it surfaces a
+hand-edit rather than blocking the merge. Treat a red drift check as a stop signal, not as a
+guarantee that something else will stop you. The
 same trap applies as for AuthN: NSwag resolves the **input** path against the working directory
 but the **output** path against the configuration file's directory, so the two paths in
 `nswag.json` look inconsistent and are not.
