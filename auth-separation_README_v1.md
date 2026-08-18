@@ -34,7 +34,7 @@ Each service has its own data store, its own deployment, and its own operational
 | `auth-separation_soc2-compliance_v1.md` | Markdown | SOC 2 compliance scope for AuthZ (access decisions and policy management). |
 | `auth-separation_deployment-topology_v1.md` | Markdown | Design doc on running each service in its own Docker instance per host, with positives, negatives, and alternatives. |
 | `auth-separation_database-spec_v1.md` | Markdown | Technology-agnostic database specification: per-service data model, indexes, access patterns, encryption, retention, backup, and required capabilities. |
-| `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser, with no network — its libraries are vendored in `vendor/`. |
+| `auth-separation_implementation-kanban_v1.html` | HTML / React | Phased Kanban board (51 tickets across 8 phases) for fully implementing this spec set. Self-contained: open in any browser, with no network — its libraries are vendored in `vendor/`. **Published at https://gbrooks1970.github.io/auth-separation/** (`AS-09`). |
 
 ### Repository layout
 

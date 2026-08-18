@@ -28,8 +28,9 @@
  * Ready however its dependencies resolve, because dependency-readiness and
  * being-in-scope are different questions and the board previously conflated
  * them: AUTH-002 and AUTH-005 advertised themselves as startable work the
- * project had decided not to do. The board has no Parked column, so they render
- * in Backlog — accurate, since they are not startable.
+ * project had decided not to do. The board carries a Parked column of its own,
+ * placed after Done: these tickets are out of scope, not queued, and rendering
+ * them in Backlog made a deliberately bounded project read as an unfinished one.
  *
  * That split is the existing sync rule ("the backlog owns status, the Kanban
  * owns content") made executable, and it removes the duplicate authority that
@@ -51,7 +52,7 @@ const check = process.argv.includes('--check');
 /** Statuses a human sets deliberately on the board; never overwritten here. */
 const IN_FLIGHT = new Set(['In Progress', 'In Review']);
 /** Column order, mirroring COLUMNS in the board's own render script. */
-const COLUMNS = ['Backlog', 'Ready', 'In Progress', 'In Review', 'Done'];
+const COLUMNS = ['Backlog', 'Ready', 'In Progress', 'In Review', 'Done', 'Parked'];
 
 const payload = (html, id) => {
   const m = html.match(
@@ -108,7 +109,7 @@ for (const t of tickets) {
   if (done.has(t.id)) derived.set(t.id, 'Done');
   // Scope beats dependency-readiness: an out-of-scope ticket is not startable
   // no matter what its blockers have done (ADR-0005).
-  else if (parked.has(t.id)) derived.set(t.id, 'Backlog');
+  else if (parked.has(t.id)) derived.set(t.id, 'Parked');
   else if (IN_FLIGHT.has(t.status)) derived.set(t.id, t.status); // a human moved this card
   else derived.set(t.id, t.blockedBy.every((d) => done.has(d)) ? 'Ready' : 'Backlog');
 }
@@ -180,7 +181,7 @@ if (check) {
   console.log(
     `${KANBAN}: in sync — ${tickets.length} ticket(s), ` +
       `${Object.entries(next.byStatus).map(([k, v]) => `${v} ${k}`).join(' / ')}` +
-      `${parked.size ? ` (${parked.size} parked, out of scope)` : ''}.`,
+      `${parked.size ? ' — Parked is out of scope under ADR-0005, not queued work' : ''}.`,
   );
   process.exit(0);
 }
