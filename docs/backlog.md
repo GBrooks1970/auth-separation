@@ -8,27 +8,32 @@
 
 # auth-separation — Backlog
 
-> ## 🏁 Project closed — 2026-08-17, briefly reopened 2026-08-18 for `AS-09`
+> ## 🏁 Project closed — 2026-08-17, briefly reopened 2026-08-18 for `AS-09` and `AS-10`
 >
 > Every item is **done or explicitly Parked** under [`adr/0005-bounded-implementation-slice.md`](adr/0005-bounded-implementation-slice.md).
-> `AS-01`..`AS-09` are closed; the `AUTH-nnn` programme is complete to the boundary that ADR set for it —
+> `AS-01`..`AS-10` are closed; the `AUTH-nnn` programme is complete to the boundary that ADR set for it —
 > **5 Done / 0 Ready / 46 Parked**. No ticket is startable, by design.
 >
 > The closure is narrated in **`session-notes/auth-separation_session-notes_v7_20260817T1817Z.md`**
 > (handover **v7 — FINAL**) at the portfolio root. The gates and the norms that must hold are pinned in
 > [`project-contract.md`](project-contract.md), which is the file to read before changing anything here.
 >
-> **Reopened once, on 2026-08-18, and recorded rather than done quietly.** `AS-09` published the
-> implementation Kanban to GitHub Pages and gave it a Parked column. This is **portfolio presentation, not
-> programme work**: no contract, stub, test or ticket scope changed, and the `AUTH-nnn` boundary is exactly
-> where `ADR-0005` left it. A closed project that is edited without saying so is worse than one that
+> **Reopened twice on 2026-08-18, both times recorded rather than done quietly.** `AS-09` published the
+> implementation Kanban to GitHub Pages and gave it a Parked column; `AS-10` closed the actionable findings
+> of the project's first formal code review. Both are **portfolio presentation and documentation, not
+> programme work**: no contract, stub, test assertion or ticket scope changed, and the `AUTH-nnn` boundary is
+> exactly where `ADR-0005` left it. A closed project that is edited without saying so is worse than one that
 > records why it was opened.
+>
+> **One thing a successor must not misread.** `AUTH-020` criterion 4 - generated files are never hand-edited -
+> is enforced by convention and *reported* by CI, not enforced at the merge boundary. `AS-10` records the
+> owner's decision to correct the documentation rather than promote the check.
 >
 > **No successor session is expected.** Reopening the *programme* still requires an explicit decision
 > superseding `ADR-0005`; a dependency resolving is not such a decision, and the status generator enforces
 > that.
 
-**Version:** 18 — **`AS-09`: the implementation Kanban is published** at https://gbrooks1970.github.io/auth-separation/, and the board gained a **`Parked` column** so that 46 out-of-scope tickets no longer render inside Backlog and read as an unfinished project. Runtime files only; the `AS-02` offline guarantee is intact in the published copy (51 cards, zero console errors, zero external requests). Raised and resolved **after** closure and recorded as a reopening rather than done quietly — portfolio presentation, not programme work: no contract, stub, test or ticket scope changed. v17 — **`AUTH-022` is Done and the bounded slice is COMPLETE.** All three server stubs are generated, built, tested and served: **36 operations across three services, every one returning 501**, from three OpenAPI contracts that named no language, framework or generator. `ADR-0005`'s posture is **fulfilled** — the specifications are demonstrably complete and coherent enough to generate a compiling service skeleton, which is the one piece of evidence a contracts-only repository cannot show. **101 tests across three suites.** The remaining **46 tickets stay Parked**; unparking needs an explicit decision superseding `ADR-0005`, and a dependency resolving is not one. Programme now reads **5 Done / 0 Ready / 46 Parked** — **no ticket is startable, by design, and the project is at a natural resting point.** v16 — **`AUTH-021` is Done: the AuthZ server stub is generated, built, tested and served.** Fourteen operations, all returning 501. The generator configuration, the implementation generator and the CI lane were reused unchanged from `AUTH-020`. Two contract shapes AuthN did not have were resolved in generator **configuration**, never in generated output: optional query parameters ordered before required ones (`CS1737`, fixed by `generateOptionalParameters`), and templated paths whose parameters are declared at path-item level. The contract reader moved to a shared `services/testing` project rather than being copied a second time. **75 tests across two suites.** Programme now reads **4 Done / 1 Ready / 46 Parked** — only `AUTH-022` remains before the slice closes. v15 — **`AUTH-020` is Done: the AuthN server stub is generated, built, tested and served.** The first code in the repository, and it is generated — twelve operations routed, every one returning 501, with `npm run generate` as the single regeneration command. `AUTH-001`'s inherited criterion 2 is discharged with it: a second CI lane (`Build and test services`) runs `dotnet test` and publishes a build artefact. Criterion 4 (no hand-edits to generated files) is now enforced rather than asserted — CI regenerates and fails on any difference. The tests read the contract rather than a copied list, so a specification change that is not regenerated fails the suite, and the spike's DTO-fidelity measurement is permanent. Programme now reads **3 Done / 2 Ready / 46 Parked**. v14 — **the Kanban's ticket content is now gated too.** `npm run lint:kanban-content` is a sixth `verify` leg: a decision that changes a ticket's criteria declares `**Amends tickets:**` in its ADR, and every ticket it names must cite that ADR; every ADR a ticket cites must exist. Closes the gap that let `AUTH-020` sit with four acceptance criteria while this file said five. v13 — **`AUTH-020`'s DTO-fidelity spike PASSED**, so `ADR-0006` is confirmed and no longer provisional: NSwag 14.7.1 parses the 3.1 contracts, generates 17/17 object schemas with zero property mismatches and 12/12 operations, compiles clean, and serves all 12 endpoints as 501. `AUTH-020` itself is **not started** — no service code exists yet. Four operational findings are recorded in `ADR-0006`. v12 — **implementation stack chosen: C# / .NET 9 + ASP.NET Core** (`ADR-0006`), then provisional until the spike proved it. Chosen because `dotnet build`/`dotnet test` discharge `AUTH-001`'s inherited criterion 2 unambiguously and ASP.NET Core stubs return 501 by default; the OpenAPI 3.1 concern proved illusory (the specs use no 3.1-only constructs) and no JDK is installed. v11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
+**Version:** 19 — **`AS-10`: the v1 code review's actionable findings are closed.** The project's first formal review is in [`.review/`](../.review/CODE_REVIEW_CLAUDE_Opus_5_v1_20260818T1017Z/00_CODE_REVIEW_CLAUDE_Opus_5_v1_20260818T1017Z.md). Its **HIGH** finding was that the drift gate does not block merges while three service READMEs claimed it did; the owner chose to **correct the documentation rather than promote the check**, so the mechanical gap stays open by decision and is recorded as such. Also: the 21 Gherkin scenarios are now described as validated-but-not-executed, and the gherkin toolchain is bumped two majors — **`npm audit` 3 moderate → 0**. Documentation and a dev-only dependency bump; no contract, stub, test assertion, ADR or ticket scope changed. v18 — **`AS-09`: the implementation Kanban is published** at https://gbrooks1970.github.io/auth-separation/, and the board gained a **`Parked` column** so that 46 out-of-scope tickets no longer render inside Backlog and read as an unfinished project. Runtime files only; the `AS-02` offline guarantee is intact in the published copy (51 cards, zero console errors, zero external requests). Raised and resolved **after** closure and recorded as a reopening rather than done quietly — portfolio presentation, not programme work: no contract, stub, test or ticket scope changed. v17 — **`AUTH-022` is Done and the bounded slice is COMPLETE.** All three server stubs are generated, built, tested and served: **36 operations across three services, every one returning 501**, from three OpenAPI contracts that named no language, framework or generator. `ADR-0005`'s posture is **fulfilled** — the specifications are demonstrably complete and coherent enough to generate a compiling service skeleton, which is the one piece of evidence a contracts-only repository cannot show. **101 tests across three suites.** The remaining **46 tickets stay Parked**; unparking needs an explicit decision superseding `ADR-0005`, and a dependency resolving is not one. Programme now reads **5 Done / 0 Ready / 46 Parked** — **no ticket is startable, by design, and the project is at a natural resting point.** v16 — **`AUTH-021` is Done: the AuthZ server stub is generated, built, tested and served.** Fourteen operations, all returning 501. The generator configuration, the implementation generator and the CI lane were reused unchanged from `AUTH-020`. Two contract shapes AuthN did not have were resolved in generator **configuration**, never in generated output: optional query parameters ordered before required ones (`CS1737`, fixed by `generateOptionalParameters`), and templated paths whose parameters are declared at path-item level. The contract reader moved to a shared `services/testing` project rather than being copied a second time. **75 tests across two suites.** Programme now reads **4 Done / 1 Ready / 46 Parked** — only `AUTH-022` remains before the slice closes. v15 — **`AUTH-020` is Done: the AuthN server stub is generated, built, tested and served.** The first code in the repository, and it is generated — twelve operations routed, every one returning 501, with `npm run generate` as the single regeneration command. `AUTH-001`'s inherited criterion 2 is discharged with it: a second CI lane (`Build and test services`) runs `dotnet test` and publishes a build artefact. Criterion 4 (no hand-edits to generated files) is now enforced rather than asserted — CI regenerates and fails on any difference. The tests read the contract rather than a copied list, so a specification change that is not regenerated fails the suite, and the spike's DTO-fidelity measurement is permanent. Programme now reads **3 Done / 2 Ready / 46 Parked**. v14 — **the Kanban's ticket content is now gated too.** `npm run lint:kanban-content` is a sixth `verify` leg: a decision that changes a ticket's criteria declares `**Amends tickets:**` in its ADR, and every ticket it names must cite that ADR; every ADR a ticket cites must exist. Closes the gap that let `AUTH-020` sit with four acceptance criteria while this file said five. v13 — **`AUTH-020`'s DTO-fidelity spike PASSED**, so `ADR-0006` is confirmed and no longer provisional: NSwag 14.7.1 parses the 3.1 contracts, generates 17/17 object schemas with zero property mismatches and 12/12 operations, compiles clean, and serves all 12 endpoints as 501. `AUTH-020` itself is **not started** — no service code exists yet. Four operational findings are recorded in `ADR-0006`. v12 — **implementation stack chosen: C# / .NET 9 + ASP.NET Core** (`ADR-0006`), then provisional until the spike proved it. Chosen because `dotnet build`/`dotnet test` discharge `AUTH-001`'s inherited criterion 2 unambiguously and ASP.NET Core stubs return 501 by default; the OpenAPI 3.1 concern proved illusory (the specs use no 3.1-only constructs) and no JDK is installed. v11 — **implementation posture decided: a bounded slice** (`ADR-0005`). The project implements the three generated server stubs (`AUTH-020`..`AUTH-022`) to prove the specifications produce working code, and **parks the remaining 46 tickets** — including `AUTH-002`, `AUTH-005` and `AUTH-084`. Parked tickets no longer derive to Ready however their dependencies resolve, so the board stops advertising work the project has decided not to do. Programme now reads **2 Done / 3 Ready / 46 Parked**. v10 — **Kanban status is now generated** (`ADR-0004`): `npm run kanban:sync` recomputes every card's column from this file plus the dependency graph, and `npm run lint:kanban` guards it as the fifth `verify` leg. No item changed status; the closure procedure in Maintenance Notes did. v9 — **`AUTH-006` is Done** (`ADR-0003`): closed against the existing `npm run verify` toolchain rather than the specific tools its April criteria named. Four of five criteria met — one, a build-failing house-style ruleset, **deliberately declined** because it contradicts the standing decision that specifications are not reshaped to satisfy a linter. Unblocks `AUTH-020`, `AUTH-021`, `AUTH-022`. v8 — **`AUTH-001` is Done** (PR [#6](https://github.com/GBrooks1970/auth-separation/pull/6), merged `8322ea9`): monorepo layout with the contracts moved into `specs/`, `.github/CODEOWNERS`, a live branch ruleset on `main`, and a CI secrets policy enforced by a fourth `npm run verify` leg. Two decisions recorded as `ADR-0001` and `ADR-0002`; its "test / build artefact" criterion is deferred to `AUTH-020` by owner decision. This unblocks `AUTH-002`, `AUTH-005` and `AUTH-006`. v7 added the landing presence to the AS-04 record. **Zero outstanding `AS-nn` items.**
 **Last Updated:** 2026-08-17
 **Based on:** `auth-separation_implementation-kanban_v1.html` (51 tickets, payload `generatedAt` 2026-04-26 22:50:00Z, board version 1.0) and the README production-readiness checklist
 
@@ -60,7 +65,7 @@ Published at **https://github.com/GBrooks1970/auth-separation** (public, MIT), r
 (`presentation_role: methodology`, gates `npm run verify` and `dotnet test AuthSeparation.sln`), listed on the public landing page, and with
 `WORKLIST_auth-separation.md` tracked at the portfolio root.
 
-**Portfolio integration is complete.** `AS-01`..`AS-09` are all closed, and the implementation programme is
+**Portfolio integration is complete.** `AS-01`..`AS-10` are all closed, and the implementation programme is
 complete to the boundary `ADR-0005` set for it. **Nothing is outstanding.**
 
 **Implementation posture — a bounded slice (`ADR-0005`, 2026-08-15).** This project implements
@@ -135,6 +140,61 @@ None outstanding.
 ### Resolved Risks
 
 _Resolved items are kept, never deleted._
+
+#### Risk #AS-10: The v1 code review's actionable findings (Score: 6) ✅ Resolved 2026-08-18
+
+**Trigger:** the project's first formal code review
+([`.review/CODE_REVIEW_CLAUDE_Opus_5_v1_20260818T1017Z/`](../.review/CODE_REVIEW_CLAUDE_Opus_5_v1_20260818T1017Z/00_CODE_REVIEW_CLAUDE_Opus_5_v1_20260818T1017Z.md)),
+which closed the gap the closure record had named. Raised and resolved **after** closure; see the reopening
+note at the top of this file. Owner decisions on each finding are recorded below.
+
+**R-01 (HIGH) - the drift gate does not block merges, and three READMEs said it did.**
+`npm run lint:generated` runs only in `Build and test services`, which is **not a required status check**
+(the `main` ruleset requires exactly `Validate specifications`). A pull request failing the drift check was
+therefore still mergeable, while `services/{authn,authz,userinfo}/README.md` each claimed "a hand-edit to a
+generated file cannot merge".
+
+The review offered two remediations: **(a)** promote the job to a required check, or **(b)** correct the
+documentation. **Owner chose (b).** Promoting the check would make the .NET build toolchain a merge
+dependency, so a transient NuGet or `setup-dotnet` outage would block documentation-only pull requests -
+a real cost on a closed, single-maintainer repository. The three READMEs now say the check **reports**
+drift rather than blocking it, and tell the reader to treat a red drift check as a stop signal rather than
+as a guarantee that something else will stop them. `docs/project-contract.md` and the main README already
+described the gating correctly and are unchanged; the repository no longer contradicts itself.
+
+**This leaves the mechanical gap open by decision.** `AUTH-020` criterion 4 is enforced by convention and
+reported by CI, not enforced at the merge boundary. Anyone reopening the project should read that as a
+deliberate trade, not an oversight.
+
+**R-03 (MEDIUM) - 21 scenarios described as executable, and nothing executes them.**
+`features/README.md` gains a **Status: validated, not executed** section stating plainly that
+`npm run lint:gherkin` checks grammar and count rather than behaviour, that there is no runner, no step
+definitions and no service to run them against, and that `AUTH-070` is the parked ticket that would stand
+them up. The main README's "The Gherkin files are the executable acceptance layer" is corrected in the same
+terms. The quoted header comment inside `features/README.md` is left as it was, with a note that it
+describes the intended end state rather than the current one.
+
+**R-04 (MEDIUM) - three moderate advisories in the specification-validation toolchain.**
+`@cucumber/gherkin` `^33.1.0` -> `^42.0.1` and `@cucumber/messages` `^28.1.0` -> `^34.2.1`, clearing all
+three (`uuid` <11.1.1 reached through the dependency chain). **`npm audit` now reports 0 vulnerabilities**,
+where it previously reported 3 moderate.
+
+The major bump proved mechanical: `scripts/validate-gherkin.mjs` needed **no change**, because its API
+surface is four imports (`AstBuilder`, `GherkinClassicTokenMatcher`, `Parser`, `IdGenerator.uuid()`). The
+leg was **negative-tested against all three of its guards** after the bump rather than trusted on a green
+run: a malformed file produces parser errors, a second `Feature:` block trips the one-Feature-per-file
+guard, and a dropped scenario trips the `EXPECTED_SCENARIOS` count. All three fail as intended, and the
+restored tree reports 21 scenarios across 7 files.
+
+**Not actioned, and why.** R-02 is resolved by the same owner decision as R-01 - the 101 tests report
+rather than gate. R-05/R-06 (triplication across the three services) are explicitly recommended in the
+review as *not worth doing at three services*; they become worthwhile only if a fourth contract appears.
+R-08 (a scope line on the published board) is presentation polish and was not requested.
+
+**Not changed by this item:** no contract, stub, test assertion, ADR or ticket scope. Documentation and a
+dev-only dependency bump.
+
+---
 
 #### Risk #AS-09: The project's one showable artefact was not published (Score: 4) ✅ Resolved 2026-08-18
 

@@ -23,7 +23,10 @@ From the **repository root** — one command, and the only supported way to chan
 npm run generate
 ```
 
-CI regenerates and fails on any difference, so a hand-edit to a generated file cannot merge.
+CI regenerates and **reports** any difference. Note what that does and does not buy: the check runs
+in the `Build and test services` job, which is **not a required status check**, so it surfaces a
+hand-edit rather than blocking the merge. Treat a red drift check as a stop signal, not as a
+guarantee that something else will stop you.
 
 > **A trap worth knowing before you move these files.** NSwag resolves the `documentGenerator` input
 > path against the **current working directory**, but the `output` path against the **configuration
