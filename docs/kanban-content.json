@@ -1,0 +1,565 @@
+{
+  "AUTH-001": {
+    "description": "Create a monorepo (or three coordinated repos) for AuthN, AuthZ, and User Info with shared CI/CD pipelines, branch protection, and code-owner rules.",
+    "acceptance": [
+      "Repository created with clear top-level directories: services/authn, services/authz, services/userinfo, specs/, infra/, docs/",
+      "CI runs on every PR: lint, test, build artefact",
+      "Branch protection requires PR review and passing CI before merge",
+      "Code-owners file maps each service directory to its named owner",
+      "Secrets management for CI is via the chosen secrets store, not committed config"
+    ],
+    "spec": "Monorepo recommended for the worked example because it keeps the spec files, infra, and code together. Three separate repos are valid if organisational policy demands service ownership boundaries. CI must run from the same source-of-truth checkout that holds the OpenAPI and AsyncAPI specs so that contract verification has access to them.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-002": {
+    "description": "Stand up a KMS (or HSM-backed equivalent) with three logically isolated key namespaces: AuthN signing, AuthN credential encryption, User Info PII encryption.",
+    "acceptance": [
+      "KMS instance reachable from each service's deployment environment",
+      "Three key namespaces created with distinct IAM access policies",
+      "JWT signing keypair generated (RS256 or ES256) with rotation cadence configured",
+      "Credential encryption KEK created with annual rotation cadence",
+      "Profile PII encryption KEK created in a logically separate namespace"
+    ],
+    "spec": "Reference: auth-separation_pci-compliance_v1.md section 3 (key rotation table). Reference: auth-separation_database-spec_v1.md section 5.4 (column encryption). The AuthN MFA secret KEK and the User Info PII KEK live in separate KMS namespaces so a compromise of one does not extend to the other.",
+    "assignee": "Security engineering"
+  },
+  "AUTH-003": {
+    "description": "Issue and distribute service identity certificates so that AuthN, AuthZ, User Info, and the bus authenticate each other with mTLS.",
+    "acceptance": [
+      "Internal CA issuing service certificates with 90-day validity",
+      "Each service has a unique identity certificate",
+      "Bus broker has a certificate that publishers verify",
+      "Cert rotation automated and tested",
+      "Revocation procedure documented in runbook"
+    ],
+    "spec": "Reference: auth-separation_architecture_v1.md section 1 (trust boundaries). Use the platform's native mesh (Istio, Linkerd, Cilium, Consul) or a lightweight per-service identity tool such as SPIFFE/SPIRE. Hand-rolled mTLS works but adds operational overhead; not recommended.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-004": {
+    "description": "Deploy the message bus (Kafka, NATS, RabbitMQ, or equivalent) with the four channels declared in the AsyncAPI spec.",
+    "acceptance": [
+      "Channels created: user.lifecycle, authn.events, authz.events, userinfo.events",
+      "Publisher authentication via mTLS certificate",
+      "Retention policy configured per channel",
+      "Dead-letter handling configured",
+      "Bus accessible from all three service environments"
+    ],
+    "spec": "Reference: specs/auth-separation_events_v1.yaml (channels list). Choose the broker based on the deployment environment. Configure at-least-once delivery as the floor; exactly-once via transactional producers is preferred for the audit and lifecycle channels.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-005": {
+    "description": "Deploy logs, metrics, and distributed tracing infrastructure with conventions that all three services will follow.",
+    "acceptance": [
+      "Log forwarder with structured JSON logs ingested into central store",
+      "Metrics scraping with Prometheus-compatible format",
+      "Tracing backend with OpenTelemetry collector",
+      "Per-service dashboards templated",
+      "Logs do not contain raw credentials, raw tokens, or unmasked personal data"
+    ],
+    "spec": "Reference: auth-separation_gdpr-compliance_v1.md section 8 (logging constraints). Reference: auth-separation_pci-compliance_v1.md section 2 Requirement 10 (logging). Tracing is mandatory because any production request crosses two or three service boundaries.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-006": {
+    "description": "Add Spectral and openapi-spec-validator to CI to gate any change to the OpenAPI/AsyncAPI specs.",
+    "acceptance": [
+      "Spectral runs on every PR that touches specs/*.yaml",
+      "openapi-spec-validator confirms 3.1 conformance",
+      "AsyncAPI CLI validates the events file",
+      "House style ruleset catches missing examples and vague descriptions",
+      "Broken specs block merge"
+    ],
+    "spec": "Reference: spec-formats_openapi_v1.md section 5 (linting). Reference: spec-formats_asyncapi_v1.md section 6 (linting). Treat broken specs the same as broken builds.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-010": {
+    "description": "Stand up the credential store with encryption at rest, restricted access, and 35-day point-in-time recovery.",
+    "acceptance": [
+      "Database instance deployed with KMS-backed encryption at rest",
+      "Application user has DML only; migration user has DDL",
+      "Backup with 35-day PITR enabled",
+      "Restore tested in pre-production",
+      "Network access restricted to the AuthN service identity"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md sections 2 and 8. Choice of storage product is open; capability list applies. A row store with strong consistency and unique-constraint enforcement is the typical fit.",
+    "assignee": "AuthN team"
+  },
+  "AUTH-011": {
+    "description": "Apply the four-entity schema (Users, MFA Factors, Refresh Tokens, Recovery Codes) with the indexes specified in the database spec.",
+    "acceptance": [
+      "All four tables/collections created with the columns and types in the spec",
+      "Six indexes created and verified",
+      "Unique constraint enforced on login_identifier (case-folded)",
+      "Migration scripts version-controlled and reversible",
+      "Schema applied to non-production environments by CI/CD"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 2.1 (schemas) and 2.2 (indexes). Use the forwards-and-backwards-compatible migration pattern from section 6.4.",
+    "assignee": "AuthN team / AI agent"
+  },
+  "AUTH-012": {
+    "description": "Stand up the AuthZ store with encryption at rest and sub-millisecond read latency for the assignments-by-user query.",
+    "acceptance": [
+      "Database instance deployed with KMS-backed encryption at rest",
+      "Hot-path read latency benchmarked at sub-1ms p99",
+      "Backup with 35-day PITR enabled",
+      "Restore tested",
+      "Network access restricted to the AuthZ service identity"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md sections 3 and 8. Strong consistency on writes is required: an assignment must be visible to the next decision check.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-013": {
+    "description": "Apply the five-entity schema (Permissions, Roles, Role Permissions, Role Assignments, Policies) with the indexes specified.",
+    "acceptance": [
+      "All five tables/collections created",
+      "Indexes including assignments_user_idx, assignments_idem_unique created",
+      "Foreign key relationships enforced",
+      "Migration scripts reversible"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 3.",
+    "assignee": "AuthZ team / AI agent"
+  },
+  "AUTH-014": {
+    "description": "Provision the append-only audit log store with high write throughput and forwarding to immutable storage.",
+    "acceptance": [
+      "Append-only enforcement at the storage layer",
+      "Write throughput benchmarked above expected peak",
+      "Forwarding pipeline to immutable object storage configured",
+      "Hash chain integrity field present in schema",
+      "Online retention 12 months, cold tier 36 months"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 4. Reference: auth-separation_soc2-compliance_v1.md AZ-AUD controls.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-015": {
+    "description": "Stand up the profile store with column-level encryption support, encryption at rest, and PITR.",
+    "acceptance": [
+      "Database instance deployed with KMS-backed encryption at rest",
+      "Column-level encryption support verified for binary columns",
+      "Backup with 35-day PITR enabled",
+      "Network access restricted to the User Info service identity",
+      "PII KMS key wired in"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md sections 5 and 8.",
+    "assignee": "User Info team"
+  },
+  "AUTH-016": {
+    "description": "Apply the four-entity schema (Profiles, Preferences, Consent Grants, Audit Shell) with column-level encryption on PII fields.",
+    "acceptance": [
+      "All four tables created",
+      "PII columns stored as ciphertext with KEK identifier",
+      "Indexes created per spec",
+      "Audit Shell schema present and empty",
+      "Migration reversible"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 5. Reference: auth-separation_gdpr-compliance_v1.md section 4 (controller obligations).",
+    "assignee": "User Info team / AI agent"
+  },
+  "AUTH-020": {
+    "description": "Run the chosen OpenAPI generator against specs/auth-separation_authn-api_v1.yaml to produce a server stub in the target language.",
+    "acceptance": [
+      "Stub compiles and serves all endpoints (returning 501 Not Implemented at first)",
+      "Generated DTOs match the OpenAPI components.schemas exactly",
+      "Generator config committed; regeneration is one command",
+      "No hand-edits to generated files",
+      "CI runs a test step and produces a build artefact for this stub (inherited from AUTH-001 acceptance criterion 2, deferred here by owner decision 2026-08-15)"
+    ],
+    "spec": "Reference: spec-formats_openapi_v1.md section 5 (code generation). Stack decided in ADR-0006: C# / .NET 9 with ASP.NET Core, generated by NSwag (openapi2cscontroller, /ControllerStyle:Abstract, /UseActionResultType:true). Note kiota generates clients only and cannot produce a server stub. The contract is immutable; if the stub is wrong, fix the spec, do not edit the stub.",
+    "assignee": "AuthN team / AI agent"
+  },
+  "AUTH-021": {
+    "description": "Run the OpenAPI generator against specs/auth-separation_authz-api_v1.yaml to produce the AuthZ server stub.",
+    "acceptance": [
+      "Stub compiles and serves all endpoints",
+      "Generated DTOs match the spec",
+      "Regeneration scripted"
+    ],
+    "spec": "See AUTH-020 spec.",
+    "assignee": "AuthZ team / AI agent"
+  },
+  "AUTH-022": {
+    "description": "Run the OpenAPI generator against specs/auth-separation_userinfo-api_v1.yaml to produce the User Info server stub.",
+    "acceptance": [
+      "Stub compiles and serves all endpoints",
+      "Generated DTOs match the spec",
+      "Regeneration scripted"
+    ],
+    "spec": "See AUTH-020 spec.",
+    "assignee": "User Info team / AI agent"
+  },
+  "AUTH-023": {
+    "description": "Use AsyncAPI Generator (or Modelina) to produce typed publishers and consumers for the four channels.",
+    "acceptance": [
+      "Publisher classes generated for AuthN, AuthZ, User Info",
+      "Consumer scaffolding generated where needed",
+      "CloudEvents envelope serialisation correct",
+      "Schema validation on publish enabled"
+    ],
+    "spec": "Reference: spec-formats_asyncapi_v1.md section 6 (code generation). Reference: specs/auth-separation_events_v1.yaml.",
+    "assignee": "Platform engineering / AI agent"
+  },
+  "AUTH-030": {
+    "description": "Implement POST /users: validate input, hash password with KDF, persist user, publish UserRegistered event.",
+    "acceptance": [
+      "POST /users returns 201 with user_id on success",
+      "Returns 409 on duplicate login_identifier",
+      "Returns 422 on validation failure",
+      "Password hashed with Argon2id (or scrypt/bcrypt) at agreed cost factor",
+      "UserRegistered event published within 2 seconds"
+    ],
+    "spec": "Reference: specs/auth-separation_authn-api_v1.yaml POST /users. Reference: features/auth-separation_acceptance-registration-and-first-login_v1.feature 'Successful registration' scenario.",
+    "assignee": "AuthN team"
+  },
+  "AUTH-031": {
+    "description": "Implement POST /sessions: verify credentials, issue access and refresh tokens, publish UserAuthenticated or AuthenticationFailed.",
+    "acceptance": [
+      "Returns 200 with TokenPair on success",
+      "Returns 401 on bad credentials, with AuthenticationFailed event",
+      "Returns 403 with MfaChallenge if MFA enrolled",
+      "Access token signed with the JWT signing key",
+      "Refresh token persisted as SHA-256 hash, plaintext returned to client only"
+    ],
+    "spec": "Reference: specs/auth-separation_authn-api_v1.yaml POST /sessions. Access token must contain no role or permission claims (architecture document section 3).",
+    "assignee": "AuthN team"
+  },
+  "AUTH-032": {
+    "description": "Implement GET /.well-known/jwks.json publishing the current public verification keys.",
+    "acceptance": [
+      "Returns the active public key(s) in JWKS format",
+      "Includes the previous key during rotation window",
+      "Response cached at the edge with appropriate max-age",
+      "Endpoint accessible without authentication"
+    ],
+    "spec": "Reference: specs/auth-separation_authn-api_v1.yaml GET /.well-known/jwks.json. The JWKS URL is the trust anchor for every downstream service that verifies tokens.",
+    "assignee": "AuthN team"
+  },
+  "AUTH-033": {
+    "description": "Implement POST /sessions/refresh with single-use rotation: consume old token, issue new pair, mark old token used.",
+    "acceptance": [
+      "Returns 200 with new TokenPair on valid refresh token",
+      "Returns 401 if refresh token is invalid, expired, or already used",
+      "Old refresh token marked as used atomically with new token issuance",
+      "Replay of the old token is rejected"
+    ],
+    "spec": "Reference: specs/auth-separation_authn-api_v1.yaml POST /sessions/refresh.",
+    "assignee": "AuthN team"
+  },
+  "AUTH-034": {
+    "description": "Implement PUT /credentials/password and POST /credentials/password/reset (initiate + confirm).",
+    "acceptance": [
+      "Password change verifies current password before accepting new one",
+      "All other sessions revoked on successful change",
+      "Reset initiation returns 202 regardless of identifier existence (no enumeration)",
+      "Reset confirmation accepts a single-use token within its TTL"
+    ],
+    "spec": "Reference: specs/auth-separation_authn-api_v1.yaml /credentials endpoints.",
+    "assignee": "AuthN team"
+  },
+  "AUTH-035": {
+    "description": "Implement /mfa/enrol, /mfa/verify, /mfa/challenge for TOTP and WebAuthn.",
+    "acceptance": [
+      "TOTP enrolment returns secret and otpauth URL",
+      "Verify endpoint accepts a current code and activates the factor",
+      "Challenge endpoint accepts a code matched against the challenge_id",
+      "MFA secrets stored as ciphertext under the credential KEK"
+    ],
+    "spec": "Reference: specs/auth-separation_authn-api_v1.yaml /mfa/* endpoints.",
+    "assignee": "AuthN team"
+  },
+  "AUTH-036": {
+    "description": "Implement POST /decisions/check and POST /decisions/batch with sub-10ms p99 latency.",
+    "acceptance": [
+      "Returns DecisionResponse with allowed, decided_at, optional reason and matched_rule",
+      "Default to deny on missing roles or unknown actions",
+      "Latency benchmarked at sub-10ms p99 under expected load",
+      "Decision is deterministic for fixed inputs"
+    ],
+    "spec": "Reference: specs/auth-separation_authz-api_v1.yaml /decisions endpoints. Reference: auth-separation_soc2-compliance_v1.md AZ-DEC controls.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-037": {
+    "description": "Implement role definitions, role-permission mapping, and assignment endpoints with idempotency support.",
+    "acceptance": [
+      "Roles can be created, replaced, deleted",
+      "Role assignments respect Idempotency-Key on retried requests",
+      "RoleAssigned and RoleRevoked events published on every change",
+      "expires_at honoured: expired assignments treated as revoked at decision time"
+    ],
+    "spec": "Reference: specs/auth-separation_authz-api_v1.yaml /roles and /users/{userId}/roles endpoints.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-038": {
+    "description": "Implement policy create/list endpoints and the evaluation engine that resolves allow/deny with conditions.",
+    "acceptance": [
+      "Policies can be created and listed",
+      "Effect resolution (allow/deny precedence) documented and tested",
+      "Condition evaluation sandboxed",
+      "PolicyChanged event published on every change"
+    ],
+    "spec": "Reference: specs/auth-separation_authz-api_v1.yaml /policies endpoints.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-039": {
+    "description": "Write one audit entry per decision with prev_hash and entry_hash; expose via GET /audit/decisions.",
+    "acceptance": [
+      "Every decision produces exactly one audit entry",
+      "Hash chain validated by background job hourly",
+      "GET /audit/decisions paginated and filterable by user_id and date range",
+      "Append-only enforcement at storage layer"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 4. Reference: auth-separation_soc2-compliance_v1.md AZ-AUD controls.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-040": {
+    "description": "Implement GET /users/me, PATCH /users/me, GET /users/{userId} with AuthZ check.",
+    "acceptance": [
+      "Self read returns the caller's profile fields",
+      "PATCH updates only specified fields",
+      "Other-user read calls AuthZ for user.read permission and returns 403 if denied",
+      "ProfileUpdated event lists fields_changed (names only, no values)"
+    ],
+    "spec": "Reference: specs/auth-separation_userinfo-api_v1.yaml /users/me and /users/{userId}.",
+    "assignee": "User Info team"
+  },
+  "AUTH-041": {
+    "description": "Implement GET and PUT /users/me/preferences.",
+    "acceptance": [
+      "GET returns current preferences",
+      "PUT replaces preferences atomically",
+      "PreferencesUpdated event published"
+    ],
+    "spec": "Reference: specs/auth-separation_userinfo-api_v1.yaml /users/me/preferences.",
+    "assignee": "User Info team"
+  },
+  "AUTH-042": {
+    "description": "Implement consent grant list, create, withdraw with version capture and evidence.",
+    "acceptance": [
+      "List returns active grants",
+      "Grant records key, version, granted_at, evidence",
+      "Withdraw sets withdrawn_at and emits ConsentWithdrawn event",
+      "Per-key withdrawal is independent of other grants"
+    ],
+    "spec": "Reference: specs/auth-separation_userinfo-api_v1.yaml /users/me/consents. Reference: auth-separation_gdpr-compliance_v1.md section 3 (Article 7).",
+    "assignee": "User Info team"
+  },
+  "AUTH-043": {
+    "description": "Implement POST /users/me/export with asynchronous delivery of a structured export.",
+    "acceptance": [
+      "Returns 202 with request_id",
+      "Export contains every personal field, preferences, consent history, audit metadata",
+      "Delivery mechanism (signed URL via email) implemented",
+      "Statutory one-month SLO with internal seven-day target"
+    ],
+    "spec": "Reference: auth-separation_gdpr-compliance_v1.md section 3 (Articles 15 and 20).",
+    "assignee": "User Info team"
+  },
+  "AUTH-044": {
+    "description": "Implement DELETE /users/me to publish UserDeletionRequested and scrub PII asynchronously.",
+    "acceptance": [
+      "Returns 202 with request_id",
+      "UserDeletionRequested event published",
+      "PII columns scrubbed within 60 seconds",
+      "Audit shell row created with request_id and timestamps"
+    ],
+    "spec": "Reference: specs/auth-separation_userinfo-api_v1.yaml DELETE /users/me. Reference: auth-separation_gdpr-compliance_v1.md section 3 (Article 17).",
+    "assignee": "User Info team"
+  },
+  "AUTH-050": {
+    "description": "Build a reusable middleware that verifies access tokens against the JWKS endpoint for use by AuthZ, User Info, and resource APIs.",
+    "acceptance": [
+      "Verifies signature, issuer, audience, expiry",
+      "Caches JWKS with reasonable TTL",
+      "Rejects tokens with unknown kid as unauthenticated",
+      "Used by AuthZ, User Info, and at least one example resource API"
+    ],
+    "spec": "Reference: auth-separation_architecture_v1.md section 3 (token model). Verification is local against JWKS; introspection (POST /sessions/introspect) is a fallback for resource servers that prefer remote validation.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-051": {
+    "description": "Each service publishes its events and consumes the events it cares about. Add CloudEvents envelope wrapping and signature verification.",
+    "acceptance": [
+      "Each service publishes its own events with CloudEvents envelope",
+      "Publisher signs payloads with its mTLS identity certificate",
+      "Consumer verifies signatures on receipt",
+      "Schema validation on publish and consume"
+    ],
+    "spec": "Reference: specs/auth-separation_events_v1.yaml. Reference: spec-formats_asyncapi_v1.md sections 3 and 10.",
+    "assignee": "All three service teams"
+  },
+  "AUTH-052": {
+    "description": "Add a read-through cache for the assignments-by-user query; invalidate on RoleAssigned/RoleRevoked/PolicyChanged events.",
+    "acceptance": [
+      "Cache hit ratio measurable",
+      "Invalidation triggered within seconds of relevant event",
+      "TTL set short enough that event loss does not let stale data survive more than minutes",
+      "Cache miss path benchmarked separately"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 3.4.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-053": {
+    "description": "On UserDeletionRequested, each service performs its scrub and emits a per-service confirmation; a coordinator publishes UserDeleted when all three are done.",
+    "acceptance": [
+      "AuthN revokes sessions, deletes credentials and MFA secrets",
+      "AuthZ removes all role assignments",
+      "User Info scrubs PII columns, retains audit shell",
+      "UserDeleted published listing all three services within 60 seconds",
+      "Acceptance scenario 'Account deletion propagates across all three services' passes"
+    ],
+    "spec": "Reference: features/auth-separation_acceptance-consent-and-lifecycle_v1.feature scenarios. Reference: auth-separation_architecture_v1.md section 4.5.",
+    "assignee": "All three service teams"
+  },
+  "AUTH-060": {
+    "description": "Script and dry-run rotation for JWT signing keys, credential KEK, profile PII KEK, mTLS certs, backup keys.",
+    "acceptance": [
+      "Each key has a documented rotation cadence",
+      "Rotation scripts tested in pre-production",
+      "Emergency rotation procedure documented and rehearsed",
+      "JWKS includes both old and new keys during the rotation window"
+    ],
+    "spec": "Reference: auth-separation_pci-compliance_v1.md section 3 (key rotation table).",
+    "assignee": "Security engineering"
+  },
+  "AUTH-061": {
+    "description": "Document and rehearse the breach response sequence for credential compromise, PII exposure, and policy misconfiguration.",
+    "acceptance": [
+      "Three runbooks: PCI-style for AuthN, GDPR for User Info, SOC 2 for AuthZ",
+      "Each runbook covers contain, investigate, rotate, notify, report, postmortem",
+      "Tabletop exercise scheduled in the next 90 days"
+    ],
+    "spec": "Reference: auth-separation_pci-compliance_v1.md section 4. Reference: auth-separation_gdpr-compliance_v1.md section 6. Reference: auth-separation_soc2-compliance_v1.md CC7.",
+    "assignee": "Security engineering"
+  },
+  "AUTH-062": {
+    "description": "Forward every decision audit entry to immutable object storage within seconds of write.",
+    "acceptance": [
+      "Forwarding pipeline running with monitored lag",
+      "Object storage configured as write-once",
+      "Online store loss recoverable from immutable copy",
+      "Pipeline stall alerted as P2 incident"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 4.4.",
+    "assignee": "AuthZ team"
+  },
+  "AUTH-063": {
+    "description": "Generate a quarterly report comparing the on-call rotation against accounts with production access; flag drift.",
+    "acceptance": [
+      "Report generated automatically each quarter",
+      "Owner named for each flagged drift item",
+      "Closure tracked in incident system"
+    ],
+    "spec": "Reference: auth-separation_soc2-compliance_v1.md AZ-OPS-05.",
+    "assignee": "Security engineering"
+  },
+  "AUTH-070": {
+    "description": "Wire the scenarios in features/ (seven files, 21 scenarios) to a Cucumber-compatible runner and run end-to-end against a deployed stack.",
+    "acceptance": [
+      "A BeforeAll-style hook asserts the full stack is ready before any scenario runs -- AuthN, AuthZ and User Info responding, and the event bus up with consumers connected -- rather than repeating those steps as a Background in each feature file (AS-06)",
+      "Every scenario in every file under features/ passes against a running stack (21 scenarios across 7 files)",
+      "Suite runs in CI on every release candidate",
+      "Failures block release"
+    ],
+    "spec": "Reference: features/ -- seven feature files, 21 scenarios, one Feature per file. features/README.md states the suite-wide readiness precondition the hook must assert; no feature file carries a Background.",
+    "assignee": "QA / All teams"
+  },
+  "AUTH-071": {
+    "description": "Run Schemathesis (or Dredd) against each service's deployed instance to detect contract drift.",
+    "acceptance": [
+      "Contract verification suite runs in CI for each service",
+      "Failures block deployment",
+      "Stateful tests cover authentication and pagination"
+    ],
+    "spec": "Reference: spec-formats_openapi_v1.md section 5 (contract verification).",
+    "assignee": "QA / Platform"
+  },
+  "AUTH-072": {
+    "description": "Run a CI consumer that subscribes to the bus during the acceptance run and validates every observed payload against the AsyncAPI schemas.",
+    "acceptance": [
+      "CI consumer running against test bus",
+      "Schema violations cause acceptance run to fail",
+      "Includes envelope and per-event payload validation"
+    ],
+    "spec": "Reference: features/auth-separation_acceptance-contract-conformance_v1.feature scenarios.",
+    "assignee": "QA / Platform"
+  },
+  "AUTH-073": {
+    "description": "Simulate a login storm at 2x expected peak; confirm AuthN remains responsive and credential database absorbs writes.",
+    "acceptance": [
+      "Login p99 latency under 500ms at 2x peak",
+      "No errors at sustained peak for 1 hour",
+      "Credential database CPU and IO within bounds"
+    ],
+    "spec": "Reference: auth-separation_database-spec_v1.md section 8.2.",
+    "assignee": "Performance engineering"
+  },
+  "AUTH-074": {
+    "description": "Drive sustained load against POST /decisions/check; confirm sub-10ms p99.",
+    "acceptance": [
+      "Decision p99 latency under 10ms at 2x peak",
+      "Cache hit ratio measured",
+      "No errors for 1-hour soak"
+    ],
+    "spec": "Reference: auth-separation_soc2-compliance_v1.md AZ-DEC-04.",
+    "assignee": "Performance engineering"
+  },
+  "AUTH-075": {
+    "description": "Engage a qualified vendor for a black-box and authenticated penetration test of all three services.",
+    "acceptance": [
+      "Test report received",
+      "All critical and high findings closed before launch",
+      "Medium and low findings tracked with owners"
+    ],
+    "spec": "Reference: auth-separation_pci-compliance_v1.md section 2 Requirement 11.",
+    "assignee": "External vendor + Security engineering"
+  },
+  "AUTH-080": {
+    "description": "Implement the deployment topology selected in the deployment-topology design doc.",
+    "acceptance": [
+      "All three services deployed per the chosen topology",
+      "Conformance items 1 to 4 from the topology doc met",
+      "Rollback procedure tested"
+    ],
+    "spec": "Reference: auth-separation_deployment-topology_v1.md sections 7 and 10.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-081": {
+    "description": "Deploy each service across at least two availability zones behind a load balancer.",
+    "acceptance": [
+      "Each service has at least two replicas in different zones",
+      "Load balancer health checks configured",
+      "Zone failure simulated successfully"
+    ],
+    "spec": "Reference: auth-separation_deployment-topology_v1.md section 4.8.",
+    "assignee": "Platform engineering"
+  },
+  "AUTH-082": {
+    "description": "Document and rehearse disaster recovery for each store, including cross-service consistency on restore.",
+    "acceptance": [
+      "Per-store DR runbook written",
+      "Annual drill scheduled and first drill executed",
+      "RTO and RPO targets met during drill"
+    ],
+    "spec": "Reference: auth-separation_soc2-compliance_v1.md A1.3. Reference: auth-separation_database-spec_v1.md sections 2.6, 3.7, 5.6.",
+    "assignee": "Platform engineering + each service team"
+  },
+  "AUTH-083": {
+    "description": "Walk through every conformance checklist (README, three compliance docs, deployment topology, database spec) and capture sign-off.",
+    "acceptance": [
+      "Each conformance item has an evidence reference",
+      "Outstanding gaps tracked with owners",
+      "Sign-off recorded by security committee"
+    ],
+    "spec": "Reference: every '_v1.md' conformance checklist in this folder.",
+    "assignee": "Security engineering"
+  },
+  "AUTH-084": {
+    "description": "Cut over to production, run smoke tests, monitor for first 48 hours.",
+    "acceptance": [
+      "Smoke suite passes in production",
+      "On-call rotation active",
+      "Dashboards green for 48-hour soak",
+      "Postmortem of launch published"
+    ],
+    "spec": "Reference: auth-separation_README_v1.md production-readiness checklist (10 items).",
+    "assignee": "All teams"
+  }
+}

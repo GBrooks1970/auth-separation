@@ -50,8 +50,9 @@ tidiness preference.
 5. **Versioning:** the version is encoded in the filename. Bump `info.version` in place for
    backwards-compatible additions; a breaking change needs a new versioned filename and a coordinated
    update to dependent specs.
-6. **`docs/backlog.md` owns ticket *status*; the Kanban owns ticket *content*.** Ready-vs-Backlog is owned
-   by neither — it is computed. Never hand-edit the board's payload; run `npm run kanban:sync`
+6. **`docs/backlog.md` owns ticket *status* and headers; `docs/kanban-content.json` owns ticket *content*
+   (description, acceptance, spec, assignee).** Ready-vs-Backlog is owned by neither — it is computed. The
+   board is generated from both and never hand-edited; run `npm run kanban:sync`
    ([`adr/0004-kanban-status-is-generated.md`](adr/0004-kanban-status-is-generated.md)).
 7. **A decision that changes a ticket's acceptance criteria must be an ADR** carrying an
    `**Amends tickets:**` line — only ADRs are gate-visible to `npm run lint:kanban-content`. This is

@@ -50,8 +50,10 @@ gave it a fifth, and went on recommending a generator that a later ADR had ruled
    **Amends tickets:** AUTH-020, AUTH-021
    ```
 
-3. **Update the Kanban payload in the same pull request**, citing the ADR id in the amended ticket, then
-   run `npm run kanban:sync` if any status also moved.
+3. **Update the ticket's entry in `docs/kanban-content.json`** in the same pull request, citing the ADR
+   id in its spec note (or `adr` list), then run `npm run kanban:sync` to regenerate the board (which also
+   picks up any status move). The board is generated from that override, so the citation reaches the
+   payload the gate inspects.
 
 `npm run lint:kanban-content` enforces steps 2 and 3 together: every ticket a decision declares it amends
 must cite that ADR, and every ADR a ticket cites must exist.
