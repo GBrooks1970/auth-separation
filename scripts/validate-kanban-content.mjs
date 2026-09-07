@@ -2,13 +2,15 @@
 /**
  * Guards the Kanban's ticket CONTENT against decisions that have moved past it.
  *
- * WHY THIS EXISTS, AND WHY IT IS NOT PART OF sync-kanban-status.mjs
+ * WHY THIS EXISTS, AND WHY IT IS NOT PART OF THE STATUS DRIFT-GATE
  *
- * That script gates ticket *status*, which is gateable because status lives in
- * two places: the backlog authors it and the board renders it, so the two can be
- * compared. Content — acceptance criteria, descriptions, spec notes — lives only
- * in the Kanban payload, by design (the sync rule gives the Kanban content). A
- * single source cannot be diffed against itself.
+ * The shared generator (portfolio-kanban-generator, run by `npm run lint:kanban`)
+ * gates ticket *status*, which is gateable because it is derived from two places:
+ * the backlog authors Done/Parked and the dependency graph, and the committed
+ * board can be diffed against a fresh generation. Content — acceptance criteria,
+ * descriptions, spec notes — has a single authoritative home (`docs/kanban-content.json`,
+ * embedded verbatim into the board), and a single source cannot be diffed against
+ * itself.
  *
  * The failure this catches is also the harder direction. Checksums and
  * reviewed-at stamps detect content that changed when it should not have.

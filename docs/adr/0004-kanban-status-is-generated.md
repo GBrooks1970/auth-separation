@@ -1,6 +1,6 @@
 # 0004. Kanban ticket status is generated, not authored
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-09-07 — see Amendment below)
 **Date:** 2026-08-15
 
 ## Context
@@ -77,3 +77,29 @@ A ticket is Ready when **every** entry in its `blockedBy` is Done. Nothing reads
   status enum would lose all of it, and it inverts the existing sync rule rather than enforcing it.
 - **A third machine-readable status file** feeding both documents. Rejected: strictly more drift
   surface, and it would make neither existing document authoritative.
+
+## Amendment (2026-09-07): the generator became a shared, published tool
+
+The **decision above is unchanged** — status is generated, not authored; a ticket is Ready only when
+every entry in its `blockedBy` is Done; nothing reads `blocks`; `In Progress`/`In Review` are preserved;
+drift is a build failure. What changed is the *mechanism* and *where content lives*, as the generator was
+generalised across the portfolio (decisions D5–D8) and this repository migrated onto it:
+
+- **The bespoke `scripts/sync-kanban-status.mjs` is retired.** The board is now built by the shared,
+  public npm package **`portfolio-kanban-generator`**, run via `npx` and pinned to `@1.0.0`. `npm run
+  kanban:sync` and the `npm run lint:kanban` drift-gate (`--check`, still a `verify` leg) both invoke it.
+  Nothing is vendored to run it.
+- **Ticket content moved out of the board.** The Decision's authority table said "the Kanban owns
+  content"; it no longer does. Ticket bodies (description, acceptance, spec, assignee) now live in
+  **`docs/kanban-content.json`**, and ticket *headers* — including `phase`, now derived from the
+  backlog's `Phase N` section headings, and `blockedBy` — are read from `docs/backlog.md` by the
+  generator's `auth-table` adapter. The board is a pure output of those two files: its `status` field is
+  still output-not-input, and now so is every other field.
+- **The board is a single self-contained file (no vendored React/Babel).** The generator renders a
+  framework-free board, so the `vendor/` directory and its ~2.9 MB of runtime were removed; `AS-02`'s
+  "opens with no network" guarantee is now met by having no dependencies at all rather than by vendoring
+  them.
+- **`npm run lint:kanban-content` is unchanged** and still runs, guarding the declared-amendment
+  convention the shared generator does not implement (an ADR's `**Amends tickets:**` line must be cited
+  by every ticket it names). It reads the generated board, so a citation authored in
+  `docs/kanban-content.json` reaches it after `npm run kanban:sync`.
